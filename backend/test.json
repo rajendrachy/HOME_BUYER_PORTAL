@@ -1,0 +1,15 @@
+{
+  "personalInfo": {
+    "fullName": "Hari Bahadur"
+  },
+  "employment": {
+    "type": "private"
+  },
+  "property": {
+    "cost": 5000000
+  },
+  "family": {
+    "members": 4
+  },
+  "subsidyRequested": 500000
+}

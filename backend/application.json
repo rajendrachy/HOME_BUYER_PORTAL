@@ -1,0 +1,29 @@
+{
+  "personalInfo": {
+    "fullName": "Hari Bahadur",
+    "citizenshipNumber": "1234-5678-90",
+    "phone": "9841234567",
+    "email": "hari@gmail.com",
+    "currentAddress": "Baneshwor, Kathmandu",
+    "permanentAddress": "Baneshwor, Kathmandu"
+  },
+  "employment": {
+    "type": "private",
+    "monthlyIncome": 45000,
+    "employerName": "ABC Company"
+  },
+  "property": {
+    "district": "Kathmandu",
+    "municipality": "Kathmandu Metropolitan City",
+    "ward": 7,
+    "tole": "Baneshwor",
+    "type": "house",
+    "cost": 5000000
+  },
+  "family": {
+    "members": 4,
+    "dependents": 2,
+    "spouseName": "Sita Bahadur"
+  },
+  "subsidyRequested": 500000
+}
