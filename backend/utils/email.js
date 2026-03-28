@@ -1,17 +1,22 @@
 const nodemailer = require('nodemailer');
 
-// Create transporter
+// Create transporter for Brevo (Sendinblue)
 const createTransporter = () => {
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    secure: false, // TLS
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS
+    },
+    tls: {
+      ciphers: 'SSLv3'
     }
   });
 };
 
-// Send email function
+// Send email function (non-blocking)
 const sendEmail = async (to, subject, html, from = null) => {
   try {
     const transporter = createTransporter();
@@ -27,12 +32,12 @@ const sendEmail = async (to, subject, html, from = null) => {
     console.log(`📧 Email sent to ${to}: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Email error:', error);
+    console.error('Email error:', error.message);
     return { success: false, error: error.message };
   }
 };
 
-// Email Templates
+// Email Templates (same as before)
 const getEmailTemplates = {
   // Application Submitted
   applicationSubmitted: (name, applicationId) => ({
@@ -147,3 +152,4 @@ const getEmailTemplates = {
 };
 
 module.exports = { sendEmail, getEmailTemplates };
+
