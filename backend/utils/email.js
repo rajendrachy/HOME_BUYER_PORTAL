@@ -15,9 +15,9 @@ const createTransporter = () => {
       rejectUnauthorized: false
     },
     // Timeout settings to prevent connection issues on Render
-    connectionTimeout: 60000,  // 60 seconds
-    greetingTimeout: 60000,    // 60 seconds
-    socketTimeout: 60000       // 60 seconds
+    connectionTimeout: 90000,  // 60 seconds
+    greetingTimeout: 90000,    // 60 seconds
+    socketTimeout: 90000       // 60 seconds
   });
 };
 
