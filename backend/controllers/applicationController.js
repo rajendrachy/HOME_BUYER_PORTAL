@@ -1,6 +1,8 @@
 const Application = require('../models/Application');
 const Municipality = require('../models/Municipality');
 const Bank = require('../models/Bank');
+const User = require('../models/User');  // ✅ ADD THIS
+const { sendEmail, getEmailTemplates } = require('../utils/email'); // ✅ ADD THIS
 
 // @desc    Submit new application (Citizen)
 // @route   POST /api/applications
@@ -25,6 +27,16 @@ const submitApplication = async (req, res) => {
     });
 
     await application.save();
+
+    // ✅ ADD EMAIL NOTIFICATION - APPLICATION SUBMITTED
+    try {
+      const user = await User.findById(req.user._id);
+      const template = getEmailTemplates.applicationSubmitted(user.name, application.applicationId);
+      await sendEmail(user.email, template.subject, template.html);
+      console.log(`📧 Email sent to ${user.email} - Application Submitted`);
+    } catch (emailError) {
+      console.error('Email error (non-critical):', emailError.message);
+    }
 
     res.status(201).json({
       success: true,
@@ -55,7 +67,6 @@ const getMyApplications = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
 
 // @desc    Get single application by ID
 // @route   GET /api/applications/:id
@@ -95,7 +106,6 @@ const getApplicationById = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
 
 // @desc    Track application by public ID (Public)
 // @route   GET /api/applications/track/:applicationId
@@ -163,11 +173,13 @@ const updateStatus = async (req, res) => {
   try {
     const { status, subsidyApproved, rejectionReason, officerNotes } = req.body;
     
-    const application = await Application.findById(req.params.id);
+    const application = await Application.findById(req.params.id).populate('userId');
     
     if (!application) {
       return res.status(404).json({ message: 'Application not found' });
     }
+    
+    const oldStatus = application.status;
     
     // Update fields
     application.status = status || application.status;
@@ -184,6 +196,22 @@ const updateStatus = async (req, res) => {
     }
     
     await application.save();
+    
+    // ✅ ADD EMAIL NOTIFICATION - APPLICATION APPROVED or REJECTED
+    try {
+      const user = application.userId;
+      if (status === 'approved') {
+        const template = getEmailTemplates.applicationApproved(user.name, application.applicationId, subsidyApproved);
+        await sendEmail(user.email, template.subject, template.html);
+        console.log(`📧 Email sent to ${user.email} - Application Approved`);
+      } else if (status === 'rejected') {
+        const template = getEmailTemplates.applicationRejected(user.name, application.applicationId, rejectionReason);
+        await sendEmail(user.email, template.subject, template.html);
+        console.log(`📧 Email sent to ${user.email} - Application Rejected`);
+      }
+    } catch (emailError) {
+      console.error('Email error (non-critical):', emailError.message);
+    }
     
     res.json({
       success: true,
@@ -204,7 +232,7 @@ const submitLoanOffer = async (req, res) => {
   try {
     const { loanAmount, interestRate, processingFee, tenure, notes } = req.body;
     
-    const application = await Application.findById(req.params.id);
+    const application = await Application.findById(req.params.id).populate('userId');
     
     if (!application) {
       return res.status(404).json({ message: 'Application not found' });
@@ -220,9 +248,20 @@ const submitLoanOffer = async (req, res) => {
     const emi = loanAmount * monthlyRate * Math.pow(1 + monthlyRate, tenure * 12) / 
                 (Math.pow(1 + monthlyRate, tenure * 12) - 1);
     
+    // Get bank name
+    let bankName = 'Bank Offer';
+    if (req.user.bankId) {
+      const bank = await Bank.findById(req.user.bankId);
+      if (bank) bankName = bank.name;
+    } else if (req.body.bankName) {
+      bankName = req.body.bankName;
+    } else if (req.user.name) {
+      bankName = req.user.name;
+    }
+    
     const offer = {
       bankId: req.user.bankId || req.body.bankId,
-      bankName: req.user.bankId ? await Bank.findById(req.user.bankId).then(b => b?.name) : req.body.bankName,
+      bankName: bankName,
       loanAmount,
       interestRate,
       processingFee,
@@ -234,6 +273,23 @@ const submitLoanOffer = async (req, res) => {
     
     application.bankOffers.push(offer);
     await application.save();
+    
+    // ✅ ADD EMAIL NOTIFICATION - BANK OFFER RECEIVED
+    try {
+      const user = application.userId;
+      const template = getEmailTemplates.bankOfferReceived(
+        user.name, 
+        application.applicationId, 
+        bankName, 
+        loanAmount, 
+        interestRate, 
+        Math.round(emi)
+      );
+      await sendEmail(user.email, template.subject, template.html);
+      console.log(`📧 Email sent to ${user.email} - Bank Offer Received`);
+    } catch (emailError) {
+      console.error('Email error (non-critical):', emailError.message);
+    }
     
     res.json({
       success: true,
@@ -303,7 +359,7 @@ const getApprovedApplications = async (req, res) => {
 // @route   PUT /api/applications/:id/accept-offer/:offerId
 const acceptOffer = async (req, res) => {
   try {
-    const application = await Application.findById(req.params.id);
+    const application = await Application.findById(req.params.id).populate('userId');
     
     if (!application) {
       return res.status(404).json({ message: 'Application not found' });
@@ -332,6 +388,22 @@ const acceptOffer = async (req, res) => {
     application.status = 'bank_selected';
     
     await application.save();
+    
+    // ✅ ADD EMAIL NOTIFICATION - OFFER ACCEPTED
+    try {
+      const user = application.userId;
+      const template = getEmailTemplates.offerAccepted(
+        user.name, 
+        application.applicationId, 
+        offer.bankName, 
+        offer.loanAmount, 
+        offer.interestRate
+      );
+      await sendEmail(user.email, template.subject, template.html);
+      console.log(`📧 Email sent to ${user.email} - Offer Accepted`);
+    } catch (emailError) {
+      console.error('Email error (non-critical):', emailError.message);
+    }
     
     res.json({
       success: true,
