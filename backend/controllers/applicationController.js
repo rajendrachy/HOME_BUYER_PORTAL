@@ -1,8 +1,8 @@
 const Application = require('../models/Application');
 const Municipality = require('../models/Municipality');
 const Bank = require('../models/Bank');
-const User = require('../models/User');  // ✅ ADD THIS
-const { sendEmail, getEmailTemplates } = require('../utils/email'); // ✅ ADD THIS
+const User = require('../models/User');
+const { sendEmail, getEmailTemplates } = require('../utils/email');
 
 // @desc    Submit new application (Citizen)
 // @route   POST /api/applications
@@ -28,12 +28,13 @@ const submitApplication = async (req, res) => {
 
     await application.save();
 
-    // ✅ ADD EMAIL NOTIFICATION - APPLICATION SUBMITTED
+    // Send email in background (don't wait)
     try {
       const user = await User.findById(req.user._id);
       const template = getEmailTemplates.applicationSubmitted(user.name, application.applicationId);
-      await sendEmail(user.email, template.subject, template.html);
-      console.log(`📧 Email sent to ${user.email} - Application Submitted`);
+      sendEmail(user.email, template.subject, template.html)
+        .then(() => console.log(`📧 Email sent to ${user.email} - Application Submitted`))
+        .catch(err => console.error('Email error:', err.message));
     } catch (emailError) {
       console.error('Email error (non-critical):', emailError.message);
     }
@@ -167,7 +168,7 @@ const getAllApplications = async (req, res) => {
   }
 };
 
-// @desc    Update application status (Municipality Officer)
+// @desc    Update application status (Municipality Officer) - FIXED: Non-blocking email
 // @route   PUT /api/applications/:id/status
 const updateStatus = async (req, res) => {
   try {
@@ -178,8 +179,6 @@ const updateStatus = async (req, res) => {
     if (!application) {
       return res.status(404).json({ message: 'Application not found' });
     }
-    
-    const oldStatus = application.status;
     
     // Update fields
     application.status = status || application.status;
@@ -197,17 +196,21 @@ const updateStatus = async (req, res) => {
     
     await application.save();
     
-    // ✅ ADD EMAIL NOTIFICATION - APPLICATION APPROVED or REJECTED
+    console.log(`✅ Application ${application.applicationId} status updated to ${status}`);
+    
+    // Send email in background (don't wait)
     try {
       const user = application.userId;
       if (status === 'approved') {
         const template = getEmailTemplates.applicationApproved(user.name, application.applicationId, subsidyApproved);
-        await sendEmail(user.email, template.subject, template.html);
-        console.log(`📧 Email sent to ${user.email} - Application Approved`);
+        sendEmail(user.email, template.subject, template.html)
+          .then(() => console.log(`📧 Email sent to ${user.email} - Application Approved`))
+          .catch(err => console.error('Email error:', err.message));
       } else if (status === 'rejected') {
         const template = getEmailTemplates.applicationRejected(user.name, application.applicationId, rejectionReason);
-        await sendEmail(user.email, template.subject, template.html);
-        console.log(`📧 Email sent to ${user.email} - Application Rejected`);
+        sendEmail(user.email, template.subject, template.html)
+          .then(() => console.log(`📧 Email sent to ${user.email} - Application Rejected`))
+          .catch(err => console.error('Email error:', err.message));
       }
     } catch (emailError) {
       console.error('Email error (non-critical):', emailError.message);
@@ -226,11 +229,11 @@ const updateStatus = async (req, res) => {
 
 // ============= BANK OFFICER ENDPOINTS =============
 
-// @desc    Submit loan offer for an application (Bank Officer)
+// @desc    Submit loan offer for an application (Bank Officer) - FIXED: Non-blocking email
 // @route   POST /api/applications/:id/offer
 const submitLoanOffer = async (req, res) => {
   try {
-    const { loanAmount, interestRate, processingFee, tenure, notes } = req.body;
+    const { loanAmount, interestRate, processingFee, tenure } = req.body;
     
     const application = await Application.findById(req.params.id).populate('userId');
     
@@ -245,22 +248,25 @@ const submitLoanOffer = async (req, res) => {
     
     // Calculate EMI
     const monthlyRate = interestRate / 100 / 12;
-    const emi = loanAmount * monthlyRate * Math.pow(1 + monthlyRate, tenure * 12) / 
-                (Math.pow(1 + monthlyRate, tenure * 12) - 1);
+    const months = tenure * 12;
+    let emi = 0;
+    
+    if (loanAmount > 0 && interestRate > 0) {
+      emi = loanAmount * monthlyRate * Math.pow(1 + monthlyRate, months) / 
+            (Math.pow(1 + monthlyRate, months) - 1);
+    }
     
     // Get bank name
     let bankName = 'Bank Offer';
     if (req.user.bankId) {
       const bank = await Bank.findById(req.user.bankId);
       if (bank) bankName = bank.name;
-    } else if (req.body.bankName) {
-      bankName = req.body.bankName;
     } else if (req.user.name) {
       bankName = req.user.name;
     }
     
     const offer = {
-      bankId: req.user.bankId || req.body.bankId,
+      bankId: req.user.bankId || null,
       bankName: bankName,
       loanAmount,
       interestRate,
@@ -274,7 +280,9 @@ const submitLoanOffer = async (req, res) => {
     application.bankOffers.push(offer);
     await application.save();
     
-    // ✅ ADD EMAIL NOTIFICATION - BANK OFFER RECEIVED
+    console.log(`✅ Bank offer submitted for ${application.applicationId} by ${bankName}`);
+    
+    // Send email in background (don't wait)
     try {
       const user = application.userId;
       const template = getEmailTemplates.bankOfferReceived(
@@ -285,8 +293,9 @@ const submitLoanOffer = async (req, res) => {
         interestRate, 
         Math.round(emi)
       );
-      await sendEmail(user.email, template.subject, template.html);
-      console.log(`📧 Email sent to ${user.email} - Bank Offer Received`);
+      sendEmail(user.email, template.subject, template.html)
+        .then(() => console.log(`📧 Email sent to ${user.email} - Bank Offer Received`))
+        .catch(err => console.error('Email error:', err.message));
     } catch (emailError) {
       console.error('Email error (non-critical):', emailError.message);
     }
@@ -297,7 +306,7 @@ const submitLoanOffer = async (req, res) => {
       offer
     });
   } catch (error) {
-    console.error(error);
+    console.error('Submit loan offer error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -313,7 +322,7 @@ const getMyBankOffers = async (req, res) => {
     const offers = [];
     applications.forEach(app => {
       app.bankOffers.forEach(offer => {
-        if (offer.bankId.toString() === req.user.bankId?.toString()) {
+        if (offer.bankId?.toString() === req.user.bankId?.toString()) {
           offers.push({
             applicationId: app.applicationId,
             applicantName: app.userId?.name,
@@ -355,24 +364,51 @@ const getApprovedApplications = async (req, res) => {
   }
 };
 
-// @desc    Citizen accepts a bank offer
+// @desc    Citizen accepts a bank offer - FIXED: With debug logs
 // @route   PUT /api/applications/:id/accept-offer/:offerId
 const acceptOffer = async (req, res) => {
   try {
+    console.log('=== ACCEPT OFFER DEBUG ===');
+    console.log('User ID from token:', req.user._id.toString());
+    console.log('User Role:', req.user.role);
+    console.log('Application ID:', req.params.id);
+    console.log('Offer ID:', req.params.offerId);
+    
     const application = await Application.findById(req.params.id).populate('userId');
     
     if (!application) {
+      console.log('❌ Application not found');
       return res.status(404).json({ message: 'Application not found' });
     }
     
+    console.log('Application Owner ID:', application.userId._id.toString());
+    console.log('Do IDs match?', application.userId._id.toString() === req.user._id.toString());
+    
     // Check if user owns this application
-    if (application.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized' });
+    if (application.userId._id.toString() !== req.user._id.toString()) {
+      console.log('❌ Authorization failed - User does not own this application');
+      return res.status(403).json({ 
+        message: 'Not authorized. You can only accept offers on your own applications.',
+        yourId: req.user._id.toString(),
+        ownerId: application.userId._id.toString()
+      });
     }
     
     const offer = application.bankOffers.id(req.params.offerId);
     if (!offer) {
+      console.log('❌ Offer not found');
       return res.status(404).json({ message: 'Offer not found' });
+    }
+    
+    console.log('✅ Offer found:', offer.bankName, 'Amount:', offer.loanAmount);
+    console.log('Offer status:', offer.status);
+    
+    // Check if offer is still available
+    if (offer.status !== 'offered') {
+      console.log('❌ Offer not available. Status:', offer.status);
+      return res.status(400).json({ 
+        message: `This offer is no longer available. Status: ${offer.status}` 
+      });
     }
     
     // Mark all other offers as rejected
@@ -389,7 +425,9 @@ const acceptOffer = async (req, res) => {
     
     await application.save();
     
-    // ✅ ADD EMAIL NOTIFICATION - OFFER ACCEPTED
+    console.log('✅ Offer accepted successfully!');
+    
+    // Send email in background (don't wait)
     try {
       const user = application.userId;
       const template = getEmailTemplates.offerAccepted(
@@ -399,8 +437,9 @@ const acceptOffer = async (req, res) => {
         offer.loanAmount, 
         offer.interestRate
       );
-      await sendEmail(user.email, template.subject, template.html);
-      console.log(`📧 Email sent to ${user.email} - Offer Accepted`);
+      sendEmail(user.email, template.subject, template.html)
+        .then(() => console.log(`📧 Email sent to ${user.email} - Offer Accepted`))
+        .catch(err => console.error('Email error:', err.message));
     } catch (emailError) {
       console.error('Email error (non-critical):', emailError.message);
     }
@@ -413,7 +452,7 @@ const acceptOffer = async (req, res) => {
       interestRate: offer.interestRate
     });
   } catch (error) {
-    console.error(error);
+    console.error('❌ Accept offer error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -430,4 +469,3 @@ module.exports = {
   getApprovedApplications,
   acceptOffer
 };
-
