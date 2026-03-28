@@ -11,8 +11,13 @@ const createTransporter = () => {
       pass: process.env.EMAIL_PASS
     },
     tls: {
-      ciphers: 'SSLv3'
-    }
+      ciphers: 'SSLv3',
+      rejectUnauthorized: false
+    },
+    // Timeout settings to prevent connection issues on Render
+    connectionTimeout: 60000,  // 60 seconds
+    greetingTimeout: 60000,    // 60 seconds
+    socketTimeout: 60000       // 60 seconds
   });
 };
 
@@ -37,7 +42,7 @@ const sendEmail = async (to, subject, html, from = null) => {
   }
 };
 
-// Email Templates (same as before)
+// Email Templates
 const getEmailTemplates = {
   // Application Submitted
   applicationSubmitted: (name, applicationId) => ({
@@ -152,4 +157,3 @@ const getEmailTemplates = {
 };
 
 module.exports = { sendEmail, getEmailTemplates };
-
