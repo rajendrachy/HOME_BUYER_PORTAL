@@ -43,6 +43,20 @@ const applicationSchema = new mongoose.Schema({
   rejectionReason: String,
   officerNotes: String,
   
+  // ✅ DOCUMENT UPLOAD FIELDS (ADD THESE)
+  citizenshipDocument: {
+    type: String,
+    default: null
+  },
+  incomeProofDocument: {
+    type: String,
+    default: null
+  },
+  propertyDocument: {
+    type: String,
+    default: null
+  },
+  
   // Bank Offers
   bankOffers: [{
     bankId: {

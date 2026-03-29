@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/authMiddleware');
+const { uploadDocuments } = require('../middleware/uploadMiddleware');
 const {
   submitApplication,
   getMyApplications,
@@ -18,11 +19,12 @@ const {
 router.get('/track/:applicationId', trackApplication);
 
 // ============= CITIZEN ROUTES =============
-router.post('/', protect, submitApplication);
+// ✅ Added uploadDocuments middleware for file upload
+router.post('/', protect, uploadDocuments, submitApplication);
 router.get('/my', protect, getMyApplications);
 router.put('/:id/accept-offer/:offerId', protect, acceptOffer);
 
-// ============= MUNICIPALITY OFFICER ROUTES (must come BEFORE /:id) =============
+// ============= MUNICIPIPALITY OFFICER ROUTES (must come BEFORE /:id) =============
 router.get('/all', protect, authorize('municipality_officer', 'admin'), getAllApplications);
 
 // ============= BANK OFFICER ROUTES (must come BEFORE /:id) =============
@@ -35,3 +37,4 @@ router.get('/:id', protect, getApplicationById);
 router.put('/:id/status', protect, authorize('municipality_officer', 'admin'), updateStatus);
 
 module.exports = router;
+

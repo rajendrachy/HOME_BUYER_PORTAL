@@ -6,6 +6,8 @@ const SubmitApplication = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Form state
   const [formData, setFormData] = useState({
     // Personal Info
     fullName: '',
@@ -37,47 +39,84 @@ const SubmitApplication = () => {
     subsidyRequested: ''
   });
 
+  // ✅ File state
+  const [files, setFiles] = useState({
+    citizenshipDocument: null,
+    incomeProofDocument: null,
+    propertyDocument: null
+  });
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // ✅ Handle file selection
+  const handleFileChange = (e) => {
+    setFiles({
+      ...files,
+      [e.target.name]: e.target.files[0]
+    });
+  };
+
+  // ✅ Handle form submission with FormData
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const applicationData = {
-        personalInfo: {
-          fullName: formData.fullName,
-          citizenshipNumber: formData.citizenshipNumber,
-          phone: formData.phone,
-          email: formData.email,
-          currentAddress: formData.currentAddress,
-          permanentAddress: formData.permanentAddress
-        },
-        employment: {
-          type: formData.employmentType,
-          monthlyIncome: parseInt(formData.monthlyIncome),
-          employerName: formData.employerName
-        },
-        property: {
-          district: formData.district,
-          municipality: formData.municipality,
-          ward: parseInt(formData.ward),
-          tole: formData.tole,
-          type: formData.propertyType,
-          cost: parseInt(formData.propertyCost)
-        },
-        family: {
-          members: parseInt(formData.familyMembers),
-          dependents: parseInt(formData.dependents),
-          spouseName: formData.spouseName
-        },
-        subsidyRequested: parseInt(formData.subsidyRequested) || parseInt(formData.propertyCost) * 0.1
-      };
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
+      
+      // Append personal info
+      formDataToSend.append('personalInfo', JSON.stringify({
+        fullName: formData.fullName,
+        citizenshipNumber: formData.citizenshipNumber,
+        phone: formData.phone,
+        email: formData.email,
+        currentAddress: formData.currentAddress,
+        permanentAddress: formData.permanentAddress
+      }));
+      
+      // Append employment info
+      formDataToSend.append('employment', JSON.stringify({
+        type: formData.employmentType,
+        monthlyIncome: parseInt(formData.monthlyIncome),
+        employerName: formData.employerName
+      }));
+      
+      // Append property info
+      formDataToSend.append('property', JSON.stringify({
+        district: formData.district,
+        municipality: formData.municipality,
+        ward: parseInt(formData.ward),
+        tole: formData.tole,
+        type: formData.propertyType,
+        cost: parseInt(formData.propertyCost)
+      }));
+      
+      // Append family info
+      formDataToSend.append('family', JSON.stringify({
+        members: parseInt(formData.familyMembers),
+        dependents: parseInt(formData.dependents),
+        spouseName: formData.spouseName
+      }));
+      
+      // Append subsidy
+      formDataToSend.append('subsidyRequested', parseInt(formData.subsidyRequested) || parseInt(formData.propertyCost) * 0.1);
+      
+      // ✅ Append files
+      if (files.citizenshipDocument) {
+        formDataToSend.append('citizenshipDocument', files.citizenshipDocument);
+      }
+      if (files.incomeProofDocument) {
+        formDataToSend.append('incomeProofDocument', files.incomeProofDocument);
+      }
+      if (files.propertyDocument) {
+        formDataToSend.append('propertyDocument', files.propertyDocument);
+      }
 
-      const { data } = await submitApplication(applicationData);
+      const { data } = await submitApplication(formDataToSend);
       alert(`Application submitted successfully! Application ID: ${data.applicationId}`);
       navigate('/citizen/dashboard');
     } catch (err) {
@@ -356,6 +395,51 @@ const SubmitApplication = () => {
               </div>
             </div>
 
+            {/* ✅ Document Upload Section */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold mb-4 pb-2 border-b">Upload Documents</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-700 mb-1">Citizenship Certificate *</label>
+                  <input
+                    type="file"
+                    name="citizenshipDocument"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleFileChange}
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                  <p className="text-sm text-gray-500 mt-1">Upload PDF, JPG or PNG (Max 5MB)</p>
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 mb-1">Income Proof (Salary Slip/Tax Return) *</label>
+                  <input
+                    type="file"
+                    name="incomeProofDocument"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleFileChange}
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                  <p className="text-sm text-gray-500 mt-1">Upload PDF, JPG or PNG (Max 5MB)</p>
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 mb-1">Property Document *</label>
+                  <input
+                    type="file"
+                    name="propertyDocument"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleFileChange}
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                  <p className="text-sm text-gray-500 mt-1">Upload PDF, JPG or PNG (Max 5MB)</p>
+                </div>
+              </div>
+            </div>
+
             {/* Submit Button */}
             <div className="flex justify-end gap-4">
               <button
@@ -381,3 +465,4 @@ const SubmitApplication = () => {
 };
 
 export default SubmitApplication;
+

@@ -7,6 +7,11 @@ const { sendEmail, getEmailTemplates } = require('../utils/email');
 // @desc    Submit new application (Citizen)
 // @route   POST /api/applications
 const submitApplication = async (req, res) => {
+  // ✅ ADD THIS DEBUG BLOCK
+  console.log('========== FILE UPLOAD DEBUG ==========');
+  console.log('req.files:', JSON.stringify(req.files, null, 2));
+  console.log('req.body keys:', Object.keys(req.body));
+  console.log('=======================================');
   try {
     const {
       personalInfo,
@@ -16,14 +21,29 @@ const submitApplication = async (req, res) => {
       subsidyRequested
     } = req.body;
 
+    // Parse JSON if sent as strings
+    const parsedPersonalInfo = typeof personalInfo === 'string' ? JSON.parse(personalInfo) : personalInfo;
+    const parsedEmployment = typeof employment === 'string' ? JSON.parse(employment) : employment;
+    const parsedProperty = typeof property === 'string' ? JSON.parse(property) : property;
+    const parsedFamily = typeof family === 'string' ? JSON.parse(family) : family;
+
+    // ✅ Get uploaded file paths
+    const citizenshipDoc = req.files?.citizenshipDocument ? `/uploads/${req.files.citizenshipDocument[0].filename}` : null;
+    const incomeProofDoc = req.files?.incomeProofDocument ? `/uploads/${req.files.incomeProofDocument[0].filename}` : null;
+    const propertyDoc = req.files?.propertyDocument ? `/uploads/${req.files.propertyDocument[0].filename}` : null;
+
     const application = new Application({
       userId: req.user._id,
-      personalInfo,
-      employment,
-      property,
-      family,
-      subsidyRequested: subsidyRequested || (property?.cost * 0.1),
-      status: 'pending'
+      personalInfo: parsedPersonalInfo,
+      employment: parsedEmployment,
+      property: parsedProperty,
+      family: parsedFamily,
+      subsidyRequested: subsidyRequested || (parsedProperty?.cost * 0.1),
+      status: 'pending',
+      // ✅ Document fields
+      citizenshipDocument: citizenshipDoc,
+      incomeProofDocument: incomeProofDoc,
+      propertyDocument: propertyDoc
     });
 
     await application.save();
@@ -229,7 +249,7 @@ const updateStatus = async (req, res) => {
 
 // ============= BANK OFFICER ENDPOINTS =============
 
-// @desc    Submit loan offer for an application (Bank Officer) - FIXED: Use bankName from user profile
+// @desc    Submit loan offer for an application (Bank Officer)
 // @route   POST /api/applications/:id/offer
 const submitLoanOffer = async (req, res) => {
   try {
@@ -256,7 +276,7 @@ const submitLoanOffer = async (req, res) => {
             (Math.pow(1 + monthlyRate, months) - 1);
     }
     
-    // ✅ FIXED: Use bankName from user profile (most reliable)
+    // Use bankName from user profile
     let bankName = req.user.bankName || req.user.name || 'Bank Offer';
     
     const offer = {
@@ -358,7 +378,7 @@ const getApprovedApplications = async (req, res) => {
   }
 };
 
-// @desc    Citizen accepts a bank offer - FIXED: With debug logs
+// @desc    Citizen accepts a bank offer
 // @route   PUT /api/applications/:id/accept-offer/:offerId
 const acceptOffer = async (req, res) => {
   try {
@@ -380,12 +400,8 @@ const acceptOffer = async (req, res) => {
     
     // Check if user owns this application
     if (application.userId._id.toString() !== req.user._id.toString()) {
-      console.log('❌ Authorization failed - User does not own this application');
-      return res.status(403).json({ 
-        message: 'Not authorized. You can only accept offers on your own applications.',
-        yourId: req.user._id.toString(),
-        ownerId: application.userId._id.toString()
-      });
+      console.log('❌ Authorization failed');
+      return res.status(403).json({ message: 'Not authorized' });
     }
     
     const offer = application.bankOffers.id(req.params.offerId);
@@ -463,3 +479,5 @@ module.exports = {
   getApprovedApplications,
   acceptOffer
 };
+
+

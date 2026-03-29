@@ -32,7 +32,7 @@ const ApplicationDetail = () => {
     try {
       await acceptOffer(id, offerId);
       alert('Offer accepted successfully!');
-      loadApplication(); // Reload to show updated status
+      loadApplication();
     } catch (err) {
       alert('Failed to accept offer: ' + (err.response?.data?.message || 'Unknown error'));
     } finally {
@@ -51,24 +51,36 @@ const ApplicationDetail = () => {
     }
   };
 
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
   if (loading) {
-    return <div className="text-center py-10">Loading...</div>;
+    return <div className="text-center py-10">Loading application details...</div>;
   }
 
   if (error || !application) {
-    return <div className="text-center py-10 text-red-500">{error || 'Application not found'}</div>;
+    return (
+      <div className="text-center py-10">
+        <p className="text-red-500">{error || 'Application not found'}</p>
+        <button
+          onClick={() => navigate('/citizen/dashboard')}
+          className="mt-4 text-blue-600 hover:underline"
+        >
+          ← Back to Dashboard
+        </button>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/citizen/dashboard')}
           className="mb-4 text-blue-600 hover:underline"
         >
-          ← Back
+          ← Back to Dashboard
         </button>
-        
+
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           {/* Header */}
           <div className="bg-gray-50 px-6 py-4 border-b">
@@ -82,79 +94,79 @@ const ApplicationDetail = () => {
               Submitted: {new Date(application.submittedAt).toLocaleDateString()}
             </p>
           </div>
-          
+
           {/* Personal Information */}
           <div className="px-6 py-4 border-b">
             <h2 className="text-lg font-semibold mb-3">Personal Information</h2>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <p className="text-gray-600 text-sm">Full Name</p>
-                <p className="font-medium">{application.personalInfo?.fullName}</p>
+                <p className="font-medium">{application.personalInfo?.fullName || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-gray-600 text-sm">Citizenship Number</p>
-                <p className="font-medium">{application.personalInfo?.citizenshipNumber}</p>
+                <p className="font-medium">{application.personalInfo?.citizenshipNumber || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-gray-600 text-sm">Phone</p>
-                <p className="font-medium">{application.personalInfo?.phone}</p>
+                <p className="font-medium">{application.personalInfo?.phone || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-gray-600 text-sm">Email</p>
-                <p className="font-medium">{application.personalInfo?.email}</p>
+                <p className="font-medium">{application.personalInfo?.email || 'N/A'}</p>
               </div>
             </div>
           </div>
-          
+
           {/* Employment Information */}
           <div className="px-6 py-4 border-b">
             <h2 className="text-lg font-semibold mb-3">Employment Information</h2>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <p className="text-gray-600 text-sm">Employment Type</p>
-                <p className="font-medium capitalize">{application.employment?.type}</p>
+                <p className="font-medium capitalize">{application.employment?.type || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-gray-600 text-sm">Monthly Income</p>
-                <p className="font-medium">NPR {application.employment?.monthlyIncome?.toLocaleString()}</p>
+                <p className="font-medium">NPR {application.employment?.monthlyIncome?.toLocaleString() || '0'}</p>
               </div>
-              <div>
+              <div className="md:col-span-2">
                 <p className="text-gray-600 text-sm">Employer</p>
                 <p className="font-medium">{application.employment?.employerName || 'N/A'}</p>
               </div>
             </div>
           </div>
-          
+
           {/* Property Information */}
           <div className="px-6 py-4 border-b">
             <h2 className="text-lg font-semibold mb-3">Property Information</h2>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <p className="text-gray-600 text-sm">Location</p>
-                <p className="font-medium">{application.property?.district}, {application.property?.municipality}</p>
+                <p className="font-medium">{application.property?.district || 'N/A'}, {application.property?.municipality || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-gray-600 text-sm">Ward</p>
-                <p className="font-medium">{application.property?.ward}</p>
+                <p className="font-medium">{application.property?.ward || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-gray-600 text-sm">Property Type</p>
-                <p className="font-medium capitalize">{application.property?.type}</p>
+                <p className="font-medium capitalize">{application.property?.type || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-gray-600 text-sm">Property Cost</p>
-                <p className="font-medium">NPR {application.property?.cost?.toLocaleString()}</p>
+                <p className="font-medium">NPR {application.property?.cost?.toLocaleString() || '0'}</p>
               </div>
             </div>
           </div>
-          
+
           {/* Subsidy Information */}
           <div className="px-6 py-4 border-b">
             <h2 className="text-lg font-semibold mb-3">Subsidy Information</h2>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <p className="text-gray-600 text-sm">Subsidy Requested</p>
-                <p className="font-medium">NPR {application.subsidyRequested?.toLocaleString()}</p>
+                <p className="font-medium">NPR {application.subsidyRequested?.toLocaleString() || '0'}</p>
               </div>
               <div>
                 <p className="text-gray-600 text-sm">Subsidy Approved</p>
@@ -170,13 +182,76 @@ const ApplicationDetail = () => {
               )}
             </div>
           </div>
-          
+
+          {/* Uploaded Documents Section */}
+          <div className="px-6 py-4 border-b">
+            <h2 className="text-lg font-semibold mb-3">📁 Uploaded Documents</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="border rounded-lg p-3 bg-gray-50">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">🪪</span>
+                  <span className="font-medium text-sm">Citizenship</span>
+                </div>
+                {application.citizenshipDocument ? (
+                  <a
+                    href={`${apiUrl}${application.citizenshipDocument}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline text-sm"
+                  >
+                    View Document
+                  </a>
+                ) : (
+                  <p className="text-gray-400 text-sm">Not uploaded</p>
+                )}
+              </div>
+
+              <div className="border rounded-lg p-3 bg-gray-50">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">💰</span>
+                  <span className="font-medium text-sm">Income Proof</span>
+                </div>
+                {application.incomeProofDocument ? (
+                  <a
+                    href={`${apiUrl}${application.incomeProofDocument}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline text-sm"
+                  >
+                    View Document
+                  </a>
+                ) : (
+                  <p className="text-gray-400 text-sm">Not uploaded</p>
+                )}
+              </div>
+
+              <div className="border rounded-lg p-3 bg-gray-50">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">🏠</span>
+                  <span className="font-medium text-sm">Property Doc</span>
+                </div>
+                {application.propertyDocument ? (
+                  <a
+                    href={`${apiUrl}${application.propertyDocument}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline text-sm"
+                  >
+                    View Document
+                  </a>
+                ) : (
+                  <p className="text-gray-400 text-sm">Not uploaded</p>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Bank Offers */}
           {application.bankOffers && application.bankOffers.length > 0 && (
             <div className="px-6 py-4 border-b">
               <h2 className="text-lg font-semibold mb-3">Bank Offers</h2>
               <div className="space-y-3">
-                {application.bankOffers.map((offer, index) => (
+                {application.bankOffers.map((offer) => (
                   <div key={offer._id} className="border rounded-lg p-4">
                     <div className="flex justify-between items-start">
                       <div>
@@ -230,7 +305,7 @@ const ApplicationDetail = () => {
               </div>
             </div>
           )}
-          
+
           {/* Footer */}
           <div className="px-6 py-4 bg-gray-50">
             <p className="text-gray-500 text-sm text-center">
@@ -244,3 +319,5 @@ const ApplicationDetail = () => {
 };
 
 export default ApplicationDetail;
+
+

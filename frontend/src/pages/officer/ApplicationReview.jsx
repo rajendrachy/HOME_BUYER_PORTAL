@@ -70,6 +70,9 @@ const ApplicationReview = () => {
     }
   };
 
+  // Get API URL for document links
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
   if (loading) {
     return <div className="text-center py-10">Loading...</div>;
   }
@@ -204,6 +207,102 @@ const ApplicationReview = () => {
                 <p className="text-gray-600 text-sm">Max Possible Subsidy (15%)</p>
                 <p className="font-medium text-blue-600">NPR {Math.floor(maxSubsidy).toLocaleString()}</p>
               </div>
+            </div>
+          </div>
+
+          {/* ✅ Uploaded Documents Section */}
+          <div className="px-6 py-4 border-b">
+            <h2 className="text-lg font-semibold mb-3">📁 Uploaded Documents</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Citizenship Document */}
+              {application.citizenshipDocument ? (
+                <div className="border rounded-lg p-3 bg-gray-50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">🪪</span>
+                    <span className="font-medium text-sm">Citizenship</span>
+                  </div>
+                  <a
+                    href={`${apiUrl}${application.citizenshipDocument}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline text-sm flex items-center gap-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    View Document
+                  </a>
+                  <p className="text-xs text-gray-400 mt-1 truncate">
+                    {application.citizenshipDocument.split('/').pop()}
+                  </p>
+                </div>
+              ) : (
+                <div className="border rounded-lg p-3 bg-gray-50 text-center text-gray-400">
+                  <span className="text-2xl">📄</span>
+                  <p className="text-sm">Citizenship<br/>Not Uploaded</p>
+                </div>
+              )}
+
+              {/* Income Proof Document */}
+              {application.incomeProofDocument ? (
+                <div className="border rounded-lg p-3 bg-gray-50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">💰</span>
+                    <span className="font-medium text-sm">Income Proof</span>
+                  </div>
+                  <a
+                    href={`${apiUrl}${application.incomeProofDocument}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline text-sm flex items-center gap-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    View Document
+                  </a>
+                  <p className="text-xs text-gray-400 mt-1 truncate">
+                    {application.incomeProofDocument.split('/').pop()}
+                  </p>
+                </div>
+              ) : (
+                <div className="border rounded-lg p-3 bg-gray-50 text-center text-gray-400">
+                  <span className="text-2xl">📄</span>
+                  <p className="text-sm">Income Proof<br/>Not Uploaded</p>
+                </div>
+              )}
+
+              {/* Property Document */}
+              {application.propertyDocument ? (
+                <div className="border rounded-lg p-3 bg-gray-50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">🏠</span>
+                    <span className="font-medium text-sm">Property Doc</span>
+                  </div>
+                  <a
+                    href={`${apiUrl}${application.propertyDocument}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline text-sm flex items-center gap-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    View Document
+                  </a>
+                  <p className="text-xs text-gray-400 mt-1 truncate">
+                    {application.propertyDocument.split('/').pop()}
+                  </p>
+                </div>
+              ) : (
+                <div className="border rounded-lg p-3 bg-gray-50 text-center text-gray-400">
+                  <span className="text-2xl">📄</span>
+                  <p className="text-sm">Property Doc<br/>Not Uploaded</p>
+                </div>
+              )}
             </div>
           </div>
 

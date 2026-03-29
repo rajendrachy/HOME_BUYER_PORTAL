@@ -14,7 +14,6 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    // Create unique filename: timestamp-randomnumber-originalname
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
   }
@@ -36,15 +35,16 @@ const fileFilter = (req, file, cb) => {
 // Configure upload
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: fileFilter
 });
 
-// Middleware for multiple file uploads
+// ✅ FIXED: Correct field names matching frontend
 const uploadDocuments = upload.fields([
-  { name: 'incomeProof', maxCount: 1 },
-  { name: 'propertyDocument', maxCount: 1 },
-  { name: 'citizenshipDocument', maxCount: 1 }
+  { name: 'citizenshipDocument', maxCount: 1 },
+  { name: 'incomeProofDocument', maxCount: 1 },
+  { name: 'propertyDocument', maxCount: 1 }
 ]);
 
 module.exports = { upload, uploadDocuments };
+
