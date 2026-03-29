@@ -61,6 +61,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // ========== ROUTES ==========
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/applications', require('./routes/applicationRoutes'));
+app.use('/api/banks', require('./routes/bankRoutes'));  // ← ADD THIS LINE
 
 // ========== TEST ROUTES ==========
 app.get('/', (req, res) => {

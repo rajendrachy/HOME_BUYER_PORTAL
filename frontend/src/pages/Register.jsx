@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../services/api';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -9,12 +10,35 @@ const Register = () => {
     phone: '',
     citizenshipNumber: '',
     password: '',
-    role: 'citizen'
+    role: 'citizen',
+    bankId: ''  // ✅ Add bankId field
   });
+  
+  const [banks, setBanks] = useState([]);  // ✅ Store banks list
+  const [loadingBanks, setLoadingBanks] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  // ✅ Load banks when role changes to bank_officer
+  useEffect(() => {
+    if (formData.role === 'bank_officer') {
+      loadBanks();
+    }
+  }, [formData.role]);
+
+  const loadBanks = async () => {
+    setLoadingBanks(true);
+    try {
+      const response = await api.get('/banks');
+      setBanks(response.data.banks);
+    } catch (error) {
+      console.error('Failed to load banks', error);
+    } finally {
+      setLoadingBanks(false);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -26,7 +50,11 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await register(formData);
+      const registerData = {
+        ...formData,
+        bankId: formData.role === 'bank_officer' ? formData.bankId : undefined
+      };
+      await register(registerData);
       navigate('/login');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
@@ -48,7 +76,7 @@ const Register = () => {
         
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Full Name</label>
+            <label className="block text-gray-700 mb-2">Full Name *</label>
             <input
               type="text"
               name="name"
@@ -60,7 +88,7 @@ const Register = () => {
           </div>
           
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Email</label>
+            <label className="block text-gray-700 mb-2">Email *</label>
             <input
               type="email"
               name="email"
@@ -72,7 +100,7 @@ const Register = () => {
           </div>
           
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Phone</label>
+            <label className="block text-gray-700 mb-2">Phone *</label>
             <input
               type="tel"
               name="phone"
@@ -84,7 +112,7 @@ const Register = () => {
           </div>
           
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Citizenship Number</label>
+            <label className="block text-gray-700 mb-2">Citizenship Number *</label>
             <input
               type="text"
               name="citizenshipNumber"
@@ -96,7 +124,7 @@ const Register = () => {
           </div>
           
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Password</label>
+            <label className="block text-gray-700 mb-2">Password *</label>
             <input
               type="password"
               name="password"
@@ -107,19 +135,42 @@ const Register = () => {
             />
           </div>
           
-          <div className="mb-6">
-            <label className="block text-gray-700 mb-2">Register as</label>
+          <div className="mb-4">
+            <label className="block text-gray-700 mb-2">Register as *</label>
             <select
               name="role"
               value={formData.role}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
             >
               <option value="citizen">Citizen</option>
               <option value="municipality_officer">Municipality Officer</option>
               <option value="bank_officer">Bank Officer</option>
             </select>
           </div>
+          
+          {/* ✅ Bank Selection - Only show for bank officers */}
+          {formData.role === 'bank_officer' && (
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-2">Select Bank *</label>
+              <select
+                name="bankId"
+                value={formData.bankId}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="">Select a bank</option>
+                {banks.map(bank => (
+                  <option key={bank._id} value={bank._id}>
+                    {bank.name} - {bank.branch}
+                  </option>
+                ))}
+              </select>
+              {loadingBanks && <p className="text-sm text-gray-500 mt-1">Loading banks...</p>}
+            </div>
+          )}
           
           <button
             type="submit"
