@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth, AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Layout/Navbar';
+import BankApplicationDetail from './pages/bank/ApplicationDetail';
 
 // Pages
 import Home from './pages/Home';
@@ -93,6 +94,8 @@ function AppRoutes() {
           </PrivateRoute>
         } />
 
+
+
         {/* Bank Officer Routes */}
         <Route path="/bank/dashboard" element={
           <PrivateRoute allowedRoles={['bank_officer', 'admin']}>
@@ -109,11 +112,22 @@ function AppRoutes() {
             <SubmitOffer />
           </PrivateRoute>
         } />
+
+        
+
+        <Route path="/bank/application/:id" element={
+         <PrivateRoute allowedRoles={['bank_officer', 'admin']}>
+       <BankApplicationDetail />
+      </PrivateRoute>
+    } />
+    
         <Route path="/bank/offers" element={
           <PrivateRoute allowedRoles={['bank_officer', 'admin']}>
             <MyOffers />
           </PrivateRoute>
         } />
+
+
 
         {/* Admin Routes */}
         <Route path="/admin/dashboard" element={

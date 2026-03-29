@@ -24,11 +24,11 @@ const Dashboard = () => {
     }
   };
 
-  // ✅ Improved function to check if this bank already submitted an offer
+  // Check if this bank already submitted an offer
   const hasSubmittedOffer = (application) => {
     if (!user || !application.bankOffers) return false;
     
-    // Check by bank ID (most reliable - for new users)
+    // Check by bank ID
     if (user.bankId) {
       const matched = application.bankOffers.some(offer => 
         offer.bankId && offer.bankId.toString() === user.bankId.toString()
@@ -36,7 +36,7 @@ const Dashboard = () => {
       if (matched) return true;
     }
     
-    // Check by bank name (for users with bankName set)
+    // Check by bank name
     if (user.bankName) {
       const matched = application.bankOffers.some(offer => 
         offer.bankName === user.bankName
@@ -44,7 +44,7 @@ const Dashboard = () => {
       if (matched) return true;
     }
     
-    // Check by officer name (fallback for old data)
+    // Check by officer name (fallback)
     if (user.name) {
       const matched = application.bankOffers.some(offer => 
         offer.bankName === user.name
@@ -86,7 +86,7 @@ const Dashboard = () => {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{getBankName()} Dashboard</h1>
-          <p className="text-gray-600 text-sm mt-1">Submit loan offers for approved applications</p>
+          <p className="text-gray-600 text-sm mt-1">Review applications and submit loan offers</p>
         </div>
         
         {/* Statistics Cards */}
@@ -159,15 +159,27 @@ const Dashboard = () => {
                             Offer Submitted
                           </span>
                         ) : (
-                          <Link
-                            to={`/bank/application/${app._id}/offer`}
-                            className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
-                          >
-                            <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                            Submit Offer
-                          </Link>
+                          <div className="flex gap-2">
+                            <Link
+                              to={`/bank/application/${app._id}`}
+                              className="inline-flex items-center px-3 py-1.5 bg-gray-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-gray-700 transition-colors"
+                            >
+                              <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              View Details
+                            </Link>
+                            <Link
+                              to={`/bank/application/${app._id}/offer`}
+                              className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                            >
+                              <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                              </svg>
+                              Submit Offer
+                            </Link>
+                          </div>
                         )}
                       </td>
                     </tr>
