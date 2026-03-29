@@ -7,7 +7,7 @@ const Dashboard = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { user } = useAuth(); // Get logged-in user
+  const { user } = useAuth();
 
   useEffect(() => {
     loadApplications();
@@ -24,15 +24,42 @@ const Dashboard = () => {
     }
   };
 
-  // Check if this bank already submitted an offer for this application
+  // ✅ Improved function to check if this bank already submitted an offer
   const hasSubmittedOffer = (application) => {
-    if (!user) return false;
+    if (!user || !application.bankOffers) return false;
     
-    return application.bankOffers?.some(offer => 
-      offer.bankId === user?.bankId || 
-      offer.bankName === user?.name ||
-      (user?.bankName && offer.bankName === user.bankName)
-    );
+    // Check by bank ID (most reliable - for new users)
+    if (user.bankId) {
+      const matched = application.bankOffers.some(offer => 
+        offer.bankId && offer.bankId.toString() === user.bankId.toString()
+      );
+      if (matched) return true;
+    }
+    
+    // Check by bank name (for users with bankName set)
+    if (user.bankName) {
+      const matched = application.bankOffers.some(offer => 
+        offer.bankName === user.bankName
+      );
+      if (matched) return true;
+    }
+    
+    // Check by officer name (fallback for old data)
+    if (user.name) {
+      const matched = application.bankOffers.some(offer => 
+        offer.bankName === user.name
+      );
+      if (matched) return true;
+    }
+    
+    return false;
+  };
+
+  // Get bank name to display in header
+  const getBankName = () => {
+    if (user?.bankName) return user.bankName;
+    if (user?.name) return user.name;
+    return 'Bank Officer';
   };
 
   if (loading) {
@@ -46,11 +73,37 @@ const Dashboard = () => {
     );
   }
 
+  // Calculate statistics
+  const stats = {
+    total: applications.length,
+    submitted: applications.filter(app => hasSubmittedOffer(app)).length,
+    pending: applications.filter(app => !hasSubmittedOffer(app)).length
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 py-6 sm:py-8 px-4">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Bank Officer Dashboard</h1>
-        <p className="text-gray-600 mb-6">Submit loan offers for approved applications</p>
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{getBankName()} Dashboard</h1>
+          <p className="text-gray-600 text-sm mt-1">Submit loan offers for approved applications</p>
+        </div>
+        
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow p-3 sm:p-4 text-center">
+            <p className="text-xl sm:text-2xl font-bold text-blue-600">{stats.total}</p>
+            <p className="text-xs text-gray-500">Total Approved</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-3 sm:p-4 text-center">
+            <p className="text-xl sm:text-2xl font-bold text-green-600">{stats.submitted}</p>
+            <p className="text-xs text-gray-500">Offers Sent</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-3 sm:p-4 text-center">
+            <p className="text-xl sm:text-2xl font-bold text-yellow-600">{stats.pending}</p>
+            <p className="text-xs text-gray-500">Pending</p>
+          </div>
+        </div>
         
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
@@ -124,31 +177,10 @@ const Dashboard = () => {
             </div>
           </div>
         )}
-        
-        {/* Statistics */}
-        {applications.length > 0 && (
-          <div className="mt-6 grid grid-cols-3 gap-3 sm:gap-4">
-            <div className="bg-white rounded-lg shadow p-3 sm:p-4 text-center">
-              <p className="text-xl sm:text-2xl font-bold text-blue-600">{applications.length}</p>
-              <p className="text-xs text-gray-500">Total Approved</p>
-            </div>
-            <div className="bg-white rounded-lg shadow p-3 sm:p-4 text-center">
-              <p className="text-xl sm:text-2xl font-bold text-green-600">
-                {applications.filter(app => hasSubmittedOffer(app)).length}
-              </p>
-              <p className="text-xs text-gray-500">Offers Sent</p>
-            </div>
-            <div className="bg-white rounded-lg shadow p-3 sm:p-4 text-center">
-              <p className="text-xl sm:text-2xl font-bold text-yellow-600">
-                {applications.filter(app => !hasSubmittedOffer(app)).length}
-              </p>
-              <p className="text-xs text-gray-500">Pending</p>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
 };
 
 export default Dashboard;
+

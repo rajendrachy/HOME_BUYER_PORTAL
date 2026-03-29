@@ -229,7 +229,7 @@ const updateStatus = async (req, res) => {
 
 // ============= BANK OFFICER ENDPOINTS =============
 
-// @desc    Submit loan offer for an application (Bank Officer) - FIXED: Non-blocking email
+// @desc    Submit loan offer for an application (Bank Officer) - FIXED: Use bankName from user profile
 // @route   POST /api/applications/:id/offer
 const submitLoanOffer = async (req, res) => {
   try {
@@ -256,14 +256,8 @@ const submitLoanOffer = async (req, res) => {
             (Math.pow(1 + monthlyRate, months) - 1);
     }
     
-    // Get bank name
-    let bankName = 'Bank Offer';
-    if (req.user.bankId) {
-      const bank = await Bank.findById(req.user.bankId);
-      if (bank) bankName = bank.name;
-    } else if (req.user.name) {
-      bankName = req.user.name;
-    }
+    // ✅ FIXED: Use bankName from user profile (most reliable)
+    let bankName = req.user.bankName || req.user.name || 'Bank Offer';
     
     const offer = {
       bankId: req.user.bankId || null,

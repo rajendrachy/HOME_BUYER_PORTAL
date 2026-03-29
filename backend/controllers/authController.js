@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Bank = require('../models/Bank');  // ✅ Add this import
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 
@@ -31,6 +32,16 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'User already exists with this email or citizenship number' });
     }
 
+    // ✅ NEW: If bank officer, get bank name
+    let bankName = null;
+    if (role === 'bank_officer' && bankId) {
+      const bank = await Bank.findById(bankId);
+      if (!bank) {
+        return res.status(400).json({ message: 'Invalid bank selected' });
+      }
+      bankName = bank.name;
+    }
+
     // Create user
     const user = await User.create({
       name,
@@ -40,7 +51,8 @@ const registerUser = async (req, res) => {
       password,
       role: role || 'citizen',
       municipalityId: municipalityId || null,
-      bankId: bankId || null
+      bankId: bankId || null,
+      bankName: bankName  // ✅ Save bank name
     });
 
     // Return user data with token
@@ -51,6 +63,7 @@ const registerUser = async (req, res) => {
       phone: user.phone,
       citizenshipNumber: user.citizenshipNumber,
       role: user.role,
+      bankName: user.bankName,  // ✅ Return bank name
       token: generateToken(user._id)
     });
   } catch (error) {
@@ -92,6 +105,7 @@ const loginUser = async (req, res) => {
       phone: user.phone,
       citizenshipNumber: user.citizenshipNumber,
       role: user.role,
+      bankName: user.bankName,  // ✅ Return bank name
       token: generateToken(user._id)
     });
   } catch (error) {
@@ -149,6 +163,7 @@ const updateProfile = async (req, res) => {
       email: updatedUser.email,
       phone: updatedUser.phone,
       role: updatedUser.role,
+      bankName: updatedUser.bankName,  // ✅ Return bank name
       token: generateToken(updatedUser._id)
     });
   } catch (error) {

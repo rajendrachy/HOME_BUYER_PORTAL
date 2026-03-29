@@ -42,6 +42,11 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Bank'
   },
+  // ✅ ADD THIS - Bank name for bank officers
+  bankName: {
+    type: String,
+    default: null
+  },
   isActive: {
     type: Boolean,
     default: true
@@ -75,3 +80,4 @@ userSchema.methods.matchPassword = async function(enteredPassword) {
 };
 
 module.exports = mongoose.model('User', userSchema);
+
