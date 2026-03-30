@@ -39,7 +39,7 @@ const Dashboard = () => {
     
     return {
       status: myOffer.status,
-      citizenName: application.userId?.name,
+      citizenName: application.userId?.name || 'Citizen',
       applicationId: application.applicationId
     };
   };
@@ -94,7 +94,7 @@ const Dashboard = () => {
           <p className="text-gray-600 text-sm mt-1">Review applications and submit loan offers</p>
         </div>
         
-        {/* Statistics Cards - Shows THIS BANK's stats */}
+        {/* Statistics Cards */}
         <div className="grid grid-cols-5 gap-3 sm:gap-4 mb-6">
           <div className="bg-white rounded-lg shadow p-3 sm:p-4 text-center">
             <p className="text-xl sm:text-2xl font-bold text-blue-600">{stats.total}</p>
@@ -141,7 +141,7 @@ const Dashboard = () => {
                     <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property Cost</th>
                     <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subsidy</th>
                     <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Your Offer Status</th>
-                    </tr>
+                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {applications.map((app) => {
@@ -169,7 +169,7 @@ const Dashboard = () => {
                         </td>
                         <td className="px-4 sm:px-6 py-4">
                           {!hasOffer ? (
-                            // This bank hasn't submitted an offer yet
+                            // No offer submitted yet
                             <div className="flex gap-2">
                               <Link
                                 to={`/bank/application/${app._id}`}
@@ -192,7 +192,7 @@ const Dashboard = () => {
                               </Link>
                             </div>
                           ) : myOfferStatus.status === 'accepted' ? (
-                            // ✅ THIS BANK's offer was accepted by citizen
+                            // ✅ Offer Accepted by Citizen
                             <div className="space-y-1">
                               <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-green-100 text-green-700">
                                 <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -210,7 +210,7 @@ const Dashboard = () => {
                               </div>
                             </div>
                           ) : myOfferStatus.status === 'rejected' ? (
-                            // ❌ THIS BANK's offer was rejected by citizen
+                            // ❌ Offer Rejected by Citizen - No View Details
                             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-red-100 text-red-700">
                               <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -218,7 +218,7 @@ const Dashboard = () => {
                               Rejected by {myOfferStatus.citizenName}
                             </span>
                           ) : (
-                            // ⏳ THIS BANK's offer is pending (waiting for citizen response)
+                            // ⏳ Offer Pending (waiting for citizen response)
                             <div className="space-y-1">
                               <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-yellow-100 text-yellow-700">
                                 <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -251,4 +251,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
