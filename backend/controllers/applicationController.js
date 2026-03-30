@@ -7,11 +7,11 @@ const { sendEmail, getEmailTemplates } = require('../utils/email');
 // @desc    Submit new application (Citizen)
 // @route   POST /api/applications
 const submitApplication = async (req, res) => {
-  // ✅ ADD THIS DEBUG BLOCK
   console.log('========== FILE UPLOAD DEBUG ==========');
-  console.log('req.files:', JSON.stringify(req.files, null, 2));
+  console.log('req.files:', req.files);
   console.log('req.body keys:', Object.keys(req.body));
   console.log('=======================================');
+  
   try {
     const {
       personalInfo,
@@ -27,7 +27,7 @@ const submitApplication = async (req, res) => {
     const parsedProperty = typeof property === 'string' ? JSON.parse(property) : property;
     const parsedFamily = typeof family === 'string' ? JSON.parse(family) : family;
 
-    // ✅ Get uploaded file paths
+    // Get uploaded file paths
     const citizenshipDoc = req.files?.citizenshipDocument ? `/uploads/${req.files.citizenshipDocument[0].filename}` : null;
     const incomeProofDoc = req.files?.incomeProofDocument ? `/uploads/${req.files.incomeProofDocument[0].filename}` : null;
     const propertyDoc = req.files?.propertyDocument ? `/uploads/${req.files.propertyDocument[0].filename}` : null;
@@ -40,7 +40,6 @@ const submitApplication = async (req, res) => {
       family: parsedFamily,
       subsidyRequested: subsidyRequested || (parsedProperty?.cost * 0.1),
       status: 'pending',
-      // ✅ Document fields
       citizenshipDocument: citizenshipDoc,
       incomeProofDocument: incomeProofDoc,
       propertyDocument: propertyDoc
@@ -48,7 +47,7 @@ const submitApplication = async (req, res) => {
 
     await application.save();
 
-    // Send email in background (don't wait)
+    // Send email in background
     try {
       const user = await User.findById(req.user._id);
       const template = getEmailTemplates.applicationSubmitted(user.name, application.applicationId);
@@ -104,17 +103,16 @@ const getApplicationById = async (req, res) => {
     const isMunicipalityOfficer = req.user.role === 'municipality_officer';
     const isBankOfficer = req.user.role === 'bank_officer';
     const isAdmin = req.user.role === 'admin';
-    
-    // Bank officers can only view approved applications
-    if (isBankOfficer && application.status !== 'approved') {
-      return res.status(403).json({ 
-        message: 'Bank officers can only view approved applications',
-        currentStatus: application.status 
-      });
-    }
+    // Bank officers can view approved AND bank_selected applications
+if (isBankOfficer && application.status !== 'approved' && application.status !== 'bank_selected') {
+  return res.status(403).json({ 
+    message: 'Bank officers can only view approved or bank selected applications',
+    currentStatus: application.status 
+  });
+}
     
     // Allow access
-    if (isOwner || isMunicipalityOfficer || (isBankOfficer && application.status === 'approved') || isAdmin) {
+   if (isOwner || isMunicipalityOfficer || (isBankOfficer && (application.status === 'approved' || application.status === 'bank_selected')) || isAdmin) {
       return res.json({
         success: true,
         application
@@ -159,11 +157,41 @@ const trackApplication = async (req, res) => {
 
 // ============= MUNICIPALITY OFFICER ENDPOINTS =============
 
-// @desc    Get all applications (Municipality Officer/Admin)
+// @desc    Get all applications with advanced filters (Municipality Officer/Admin)
 // @route   GET /api/applications/all
+// @access  Private (Municipality Officer/Admin)
 const getAllApplications = async (req, res) => {
   try {
     let query = {};
+    
+    // ✅ FILTER BY STATUS
+    if (req.query.status && req.query.status !== 'all') {
+      query.status = req.query.status;
+    }
+    
+    // ✅ FILTER BY DISTRICT
+    if (req.query.district && req.query.district !== 'all') {
+      query['property.district'] = req.query.district;
+    }
+    
+    // ✅ FILTER BY DATE RANGE
+    if (req.query.startDate) {
+      query.submittedAt = { ...query.submittedAt, $gte: new Date(req.query.startDate) };
+    }
+    if (req.query.endDate) {
+      query.submittedAt = { ...query.submittedAt, $lte: new Date(req.query.endDate) };
+    }
+    
+    // ✅ SEARCH BY APPLICATION ID OR APPLICANT NAME/EMAIL
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search, 'i');
+      query.$or = [
+        { applicationId: searchRegex },
+        { 'personalInfo.fullName': searchRegex },
+        { 'personalInfo.email': searchRegex },
+        { 'personalInfo.citizenshipNumber': searchRegex }
+      ];
+    }
     
     // If officer, filter by their municipality
     if (req.user.role === 'municipality_officer' && req.user.municipalityId) {
@@ -173,14 +201,58 @@ const getAllApplications = async (req, res) => {
       }
     }
     
+    // ✅ PAGINATION
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    
+    // ✅ SORTING
+    let sort = { createdAt: -1 }; // Default: newest first
+    if (req.query.sortBy) {
+      switch (req.query.sortBy) {
+        case 'date_asc':
+          sort = { createdAt: 1 };
+          break;
+        case 'date_desc':
+          sort = { createdAt: -1 };
+          break;
+        case 'cost_asc':
+          sort = { 'property.cost': 1 };
+          break;
+        case 'cost_desc':
+          sort = { 'property.cost': -1 };
+          break;
+        case 'status':
+          sort = { status: 1 };
+          break;
+        default:
+          sort = { createdAt: -1 };
+      }
+    }
+    
+    // Execute query with pagination
     const applications = await Application.find(query)
       .populate('userId', 'name email phone')
-      .sort({ createdAt: -1 });
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
+    
+    // Get total count for pagination
+    const total = await Application.countDocuments(query);
+    
+    // ✅ Get unique districts for filter dropdown
+    const districts = await Application.distinct('property.district');
     
     res.json({
       success: true,
       count: applications.length,
-      applications
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      applications,
+      filters: {
+        districts: districts.filter(d => d)
+      }
     });
   } catch (error) {
     console.error(error);
@@ -188,7 +260,7 @@ const getAllApplications = async (req, res) => {
   }
 };
 
-// @desc    Update application status (Municipality Officer) - FIXED: Non-blocking email
+// @desc    Update application status (Municipality Officer)
 // @route   PUT /api/applications/:id/status
 const updateStatus = async (req, res) => {
   try {
@@ -218,7 +290,7 @@ const updateStatus = async (req, res) => {
     
     console.log(`✅ Application ${application.applicationId} status updated to ${status}`);
     
-    // Send email in background (don't wait)
+    // Send email in background
     try {
       const user = application.userId;
       if (status === 'approved') {
@@ -296,7 +368,7 @@ const submitLoanOffer = async (req, res) => {
     
     console.log(`✅ Bank offer submitted for ${application.applicationId} by ${bankName}`);
     
-    // Send email in background (don't wait)
+    // Send email in background
     try {
       const user = application.userId;
       const template = getEmailTemplates.bankOfferReceived(
@@ -359,18 +431,67 @@ const getMyBankOffers = async (req, res) => {
   }
 };
 
-// @desc    Get approved applications for bank offers
+
+
+// @desc    Get applications for bank offers (approved AND bank_selected)
 // @route   GET /api/applications/approved
+// @access  Private (Bank Officer)
 const getApprovedApplications = async (req, res) => {
   try {
+    // ✅ Include both APPROVED and BANK_SELECTED applications
     const applications = await Application.find({ 
-      status: 'approved' 
+      status: { $in: ['approved', 'bank_selected'] }
     }).populate('userId', 'name email phone');
     
     res.json({
       success: true,
       count: applications.length,
       applications
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+
+
+// ✅ Get all offers submitted by this bank (including accepted/rejected)
+// @route   GET /api/applications/my-offers
+// @access  Private (Bank Officer)
+const getMyOffers = async (req, res) => {
+  try {
+    // Find all applications where this bank submitted an offer
+    const applications = await Application.find({
+      'bankOffers.bankId': req.user.bankId
+    }).populate('userId', 'name email phone');
+    
+    // Format the response with offer details
+    const myOffers = [];
+    applications.forEach(app => {
+      const myOffer = app.bankOffers.find(offer => 
+        offer.bankId?.toString() === req.user.bankId?.toString()
+      );
+      
+      if (myOffer) {
+        myOffers.push({
+          applicationId: app.applicationId,
+          applicantName: app.userId?.name,
+          applicantEmail: app.userId?.email,
+          applicantPhone: app.userId?.phone,
+          propertyCost: app.property?.cost,
+          subsidyApproved: app.subsidyApproved,
+          offerDetails: myOffer,
+          applicationStatus: app.status,
+          selectedBank: app.selectedBankId?.toString() === req.user.bankId?.toString()
+        });
+      }
+    });
+    
+    res.json({
+      success: true,
+      count: myOffers.length,
+      offers: myOffers
     });
   } catch (error) {
     console.error(error);
@@ -437,7 +558,7 @@ const acceptOffer = async (req, res) => {
     
     console.log('✅ Offer accepted successfully!');
     
-    // Send email in background (don't wait)
+    // Send email in background
     try {
       const user = application.userId;
       const template = getEmailTemplates.offerAccepted(
@@ -477,7 +598,7 @@ module.exports = {
   submitLoanOffer,
   getMyBankOffers,
   getApprovedApplications,
+  getMyOffers,
   acceptOffer
 };
-
 
