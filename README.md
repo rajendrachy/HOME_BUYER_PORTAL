@@ -1,6 +1,6 @@
 # 🏠 Home Buyer Portal - Nepal Government Initiative
 
-A comprehensive MERN stack web application that helps first-time home buyers in Nepal apply for government subsidies and get bank loans. This project was built based on the Rastriya Swatantra Party (RSP) manifesto promise and Balen Shah's digital governance vision.
+A comprehensive MERN stack web application that helps first-time home buyers in Nepal apply for government subsidies and get bank loans.
 
 ## 🌐 Live Demo
 
