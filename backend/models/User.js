@@ -61,14 +61,15 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  twoFactorSecret: {
-    type: String,
-    select: false
-  },
   tempTwoFactorSecret: {
     type: String,
     select: false
   },
+  twoFactorSecret: {
+    type: String,
+    select: false
+  },
+  
   isTwoFactorEnabled: {
     type: Boolean,
     default: false
