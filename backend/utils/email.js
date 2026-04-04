@@ -112,7 +112,7 @@ const getEmailTemplates = {
     `
   }),
   
-  // Offer Accepted
+  // Offer Accepted successful
   offerAccepted: (name, applicationId, bankName, loanAmount, interestRate) => ({
     subject: 'Bank Offer Accepted - Application Complete',
     html: `
