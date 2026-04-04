@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getApplicationById } from '../../services/api';
+import { getFileUrl, getDocPreviewUrl } from '../../utils/fileConfig';
 
 const BankApplicationDetail = () => {
   const { id } = useParams();
@@ -24,7 +25,6 @@ const BankApplicationDetail = () => {
     }
   };
 
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   if (loading) {
     return <div className="text-center py-10">Loading...</div>;
@@ -75,9 +75,9 @@ const BankApplicationDetail = () => {
           <div className="px-6 py-4">
             <h2 className="font-semibold mb-2">Documents</h2>
             <div className="space-y-2">
-              {application.citizenshipDocument && <a href={`${apiUrl}${application.citizenshipDocument}`} target="_blank" className="text-blue-600 block">📄 Citizenship Certificate</a>}
-              {application.incomeProofDocument && <a href={`${apiUrl}${application.incomeProofDocument}`} target="_blank" className="text-blue-600 block">📄 Income Proof</a>}
-              {application.propertyDocument && <a href={`${apiUrl}${application.propertyDocument}`} target="_blank" className="text-blue-600 block">📄 Property Document</a>}
+              {application.citizenshipDocument && <a href={getDocPreviewUrl(application.citizenshipDocument)} target="_blank" className="text-blue-600 block">📄 Citizenship Certificate</a>}
+              {application.incomeProofDocument && <a href={getDocPreviewUrl(application.incomeProofDocument)} target="_blank" className="text-blue-600 block">📄 Income Proof</a>}
+              {application.propertyDocument && <a href={getDocPreviewUrl(application.propertyDocument)} target="_blank" className="text-blue-600 block">📄 Property Document</a>}
             </div>
           </div>
         </div>

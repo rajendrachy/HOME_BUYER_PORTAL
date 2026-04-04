@@ -1,45 +1,39 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary');
 
-// Ensure upload directory exists
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Configure storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+// Configure Cloudinary Storage
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'home-buyer-portal/documents',
+    allowed_formats: ['jpg', 'png', 'pdf', 'jpeg'],
+    resource_type: (req, file) => {
+      // Treat PDFs as 'raw' to avoid Cloudinary's image-security restrictions on PDFs
+      if (file.mimetype === 'application/pdf' || file.originalname.endsWith('.pdf')) {
+        return 'raw';
+      }
+      return 'image';
+    },
+    access_mode: 'public', // Ensure documents are publicly accessible
+    public_id: (req, file) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const parts = file.originalname.split('.');
+      const filename = parts[0];
+      const ext = parts.length > 1 ? '.' + parts[parts.length - 1] : '';
+      // Keep file extension in public_id so the URL ends with .pdf
+      return `${filename}-${uniqueSuffix}${ext}`;
+    }
   }
 });
 
-// File filter - only allow images and PDFs
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|pdf|doc|docx/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
-
-  if (mimetype && extname) {
-    return cb(null, true);
-  } else {
-    cb(new Error('Only images and PDF files are allowed'));
-  }
-};
-
-// Configure upload
+// Configure upload middleware
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: fileFilter
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
 });
 
-// ✅ FIXED: Correct field names matching frontend
+// ✅ Fields matching frontend application form
 const uploadDocuments = upload.fields([
   { name: 'citizenshipDocument', maxCount: 1 },
   { name: 'incomeProofDocument', maxCount: 1 },
@@ -47,4 +41,3 @@ const uploadDocuments = upload.fields([
 ]);
 
 module.exports = { upload, uploadDocuments };
-

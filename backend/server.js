@@ -2,6 +2,10 @@ const express = require('express');
 const dotenv = require('dotenv');
 const path = require('path');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const http = require('http');
+const { Server } = require('socket.io');
 
 // Load .env from the current directory
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -26,6 +30,9 @@ createIndexes();
 // Initialize express app
 const app = express();
 
+// Initialize HTTP server and Socket.io
+const server = http.createServer(app);
+
 // ========== CORS CONFIGURATION FOR PRODUCTION ==========
 const allowedOrigins = [
   'http://localhost:5173',
@@ -40,6 +47,13 @@ app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
+    
+    // In development, allow any localhost/127.0.0.1 origin
+    const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
+    if (process.env.NODE_ENV === 'development' && isLocalhost) {
+      return callback(null, true);
+    }
+
     if (allowedOrigins.indexOf(origin) === -1) {
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
       return callback(new Error(msg), false);
@@ -55,14 +69,59 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Socket.io initialization
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST']
+  }
+});
+
+// Provide io to routes via req.app.get('io')
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  console.log(`🔌 Client connected: ${socket.id}`);
+  
+  // Example: Client joins a room with their userId
+  socket.on('join', (userId) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined their personal room.`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`🔌 Client disconnected: ${socket.id}`);
+  });
+});
+
+// Security Middlewares
+app.use(helmet({ crossOriginResourcePolicy: false })); // allow static files/images to load without strict CORB
+
+// Rate Limiting
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { message: 'Too many requests from this IP, please try again after 15 minutes' }
+});
+app.use('/api/auth/', authLimiter);
+
 // Serve uploaded files
-app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve uploaded files
+app.use('/api/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.pdf')) {
+      res.set('Content-Type', 'application/pdf');
+      res.set('Content-Disposition', 'inline');
+    }
+  }
+}));
 
 
 // ========== ROUTES ==========
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/applications', require('./routes/applicationRoutes'));
-app.use('/api/banks', require('./routes/bankRoutes'));  // ← ADD THIS LINE
+app.use('/api/banks', require('./routes/bankRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 // ========== TEST ROUTES ==========
 app.get('/', (req, res) => {
@@ -118,10 +177,18 @@ app.use((req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err.message);
-  res.status(500).json({ 
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  const statusCode = err.statusCode || 500;
+  const message = err.message || 'Internal server error';
+  
+  console.error(`❌ [${new Date().toISOString()}] Error ${statusCode}:`, message);
+  if (err.stack && process.env.NODE_ENV === 'development') {
+    console.error(err.stack);
+  }
+
+  res.status(statusCode).json({ 
+    success: false,
+    message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 });
 
@@ -129,7 +196,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 // Start server
-const server = app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📡 API URL: http://localhost:${PORT}`);
   console.log(`🔐 Auth API: http://localhost:${PORT}/api/auth`);

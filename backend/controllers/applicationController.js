@@ -3,6 +3,7 @@ const Municipality = require('../models/Municipality');
 const Bank = require('../models/Bank');
 const User = require('../models/User');
 const { sendEmail, getEmailTemplates } = require('../utils/email');
+const { sendNotification } = require('../utils/notify');
 
 // @desc    Submit new application (Citizen)
 // @route   POST /api/applications
@@ -27,10 +28,10 @@ const submitApplication = async (req, res) => {
     const parsedProperty = typeof property === 'string' ? JSON.parse(property) : property;
     const parsedFamily = typeof family === 'string' ? JSON.parse(family) : family;
 
-    // Get uploaded file paths
-    const citizenshipDoc = req.files?.citizenshipDocument ? `/uploads/${req.files.citizenshipDocument[0].filename}` : null;
-    const incomeProofDoc = req.files?.incomeProofDocument ? `/uploads/${req.files.incomeProofDocument[0].filename}` : null;
-    const propertyDoc = req.files?.propertyDocument ? `/uploads/${req.files.propertyDocument[0].filename}` : null;
+    // Get uploaded file URLs from Cloudinary
+    const citizenshipDoc = req.files?.citizenshipDocument ? req.files.citizenshipDocument[0].path : null;
+    const incomeProofDoc = req.files?.incomeProofDocument ? req.files.incomeProofDocument[0].path : null;
+    const propertyDoc = req.files?.propertyDocument ? req.files.propertyDocument[0].path : null;
 
     const application = new Application({
       userId: req.user._id,
@@ -46,6 +47,30 @@ const submitApplication = async (req, res) => {
     });
 
     await application.save();
+
+    // 🔔 Send notification to citizen
+    const io = req.app.get('io');
+    sendNotification(io, req.user._id, {
+      title: 'Application Submitted ✅',
+      message: `Your application #${application.applicationId} has been submitted and is now pending review.`,
+      type: 'info',
+      link: `/citizen/application/${application._id}`
+    });
+
+    // 🔔 Notify all officers & admins about new application
+    try {
+      const officers = await User.find({ role: { $in: ['municipality_officer', 'admin'] } });
+      for (const officer of officers) {
+        sendNotification(io, officer._id, {
+          title: 'New Application Received 📋',
+          message: `${req.user.name || 'A citizen'} submitted application #${application.applicationId}.`,
+          type: 'info',
+          link: `/officer/application/${application._id}`
+        });
+      }
+    } catch (notifErr) {
+      console.error('Officer notification error (non-critical):', notifErr.message);
+    }
 
     // Send email in background
     try {
@@ -98,28 +123,30 @@ const getApplicationById = async (req, res) => {
       return res.status(404).json({ message: 'Application not found' });
     }
     
-    // Check permissions
+    // Define permissions
     const isOwner = application.userId.toString() === req.user._id.toString();
     const isMunicipalityOfficer = req.user.role === 'municipality_officer';
     const isBankOfficer = req.user.role === 'bank_officer';
     const isAdmin = req.user.role === 'admin';
-    // Bank officers can view approved AND bank_selected applications
-if (isBankOfficer && application.status !== 'approved' && application.status !== 'bank_selected') {
-  return res.status(403).json({ 
-    message: 'Bank officers can only view approved or bank selected applications',
-    currentStatus: application.status 
-  });
-}
     
-    // Allow access
-   if (isOwner || isMunicipalityOfficer || (isBankOfficer && (application.status === 'approved' || application.status === 'bank_selected')) || isAdmin) {
+    // Bank officers can only view approved or bank_selected applications
+    if (isBankOfficer && (application.status !== 'approved' && application.status !== 'bank_selected')) {
+      return res.status(403).json({ 
+        success: false,
+        message: 'Bank officers can only view approved or bank selected applications',
+        currentStatus: application.status 
+      });
+    }
+
+    // Check if user is authorized for this specific application
+    if (isOwner || isMunicipalityOfficer || isBankOfficer || isAdmin) {
       return res.json({
         success: true,
         application
       });
     }
     
-    return res.status(403).json({ message: 'Not authorized to view this application' });
+    return res.status(403).json({ success: false, message: 'Not authorized to view this application' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -162,6 +189,10 @@ const trackApplication = async (req, res) => {
 // @access  Private (Municipality Officer/Admin)
 const getAllApplications = async (req, res) => {
   try {
+    console.log('🔍 getAllApplications called...');
+    console.log('User:', req.user?.email, 'Role:', req.user?.role);
+    console.log('Query params:', req.query);
+    
     let query = {};
     
     // ✅ FILTER BY STATUS
@@ -243,6 +274,8 @@ const getAllApplications = async (req, res) => {
     // ✅ Get unique districts for filter dropdown
     const districts = await Application.distinct('property.district');
     
+    console.log(`✅ Found ${applications.length} applications (Total: ${total})`);
+    
     res.json({
       success: true,
       count: applications.length,
@@ -255,8 +288,13 @@ const getAllApplications = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('❌ getAllApplications Error:', error.message);
+    console.error('Stack:', error.stack);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error', 
+      error: error.message 
+    });
   }
 };
 
@@ -290,6 +328,32 @@ const updateStatus = async (req, res) => {
     
     console.log(`✅ Application ${application.applicationId} status updated to ${status}`);
     
+    // Real-time notification to citizen
+    const io = req.app.get('io');
+    sendNotification(io, application.userId._id || application.userId, {
+      title: `Application ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+      message: `Your application #${application.applicationId} has been ${status}.`,
+      type: status === 'approved' ? 'success' : (status === 'rejected' ? 'error' : 'info'),
+      link: `/citizen/application/${application._id}`
+    });
+
+    // 🔔 Notify bank officers when application is approved
+    if (status === 'approved') {
+      try {
+        const bankOfficers = await User.find({ role: 'bank_officer' });
+        for (const banker of bankOfficers) {
+          sendNotification(io, banker._id, {
+            title: 'New Approved Application 🏦',
+            message: `Application #${application.applicationId} has been approved. Submit your loan offer now!`,
+            type: 'success',
+            link: `/bank/application/${application._id}`
+          });
+        }
+      } catch (notifErr) {
+        console.error('Bank notification error (non-critical):', notifErr.message);
+      }
+    }
+
     // Send email in background
     try {
       const user = application.userId;
@@ -367,6 +431,15 @@ const submitLoanOffer = async (req, res) => {
     await application.save();
     
     console.log(`✅ Bank offer submitted for ${application.applicationId} by ${bankName}`);
+
+    // Real-time notification
+    const io = req.app.get('io');
+    sendNotification(io, application.userId._id || application.userId, {
+      title: `New Bank Offer`,
+      message: `${bankName} has offered you a loan of NPR ${loanAmount.toLocaleString()}`,
+      type: 'success',
+      link: `/citizen/application/${application._id}`
+    });
     
     // Send email in background
     try {

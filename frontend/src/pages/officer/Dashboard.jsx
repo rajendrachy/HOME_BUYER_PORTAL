@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getAllApplicationsWithFilters } from '../../services/api';
 import FilterBar from '../../components/FilterBar';
 import { exportApplicationsToCSV } from '../../utils/export';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 const Dashboard = () => {
   const [applications, setApplications] = useState([]);
@@ -110,6 +111,13 @@ const Dashboard = () => {
     bankSelected: applications.filter(a => a.status === 'bank_selected').length
   };
 
+  const pieData = [
+    { name: 'Pending', value: stats.pending, color: '#eab308' },
+    { name: 'Approved', value: stats.approved, color: '#22c55e' },
+    { name: 'Rejected', value: stats.rejected, color: '#ef4444' },
+    { name: 'Bank Selected', value: stats.bankSelected, color: '#a855f7' }
+  ].filter(item => item.value > 0);
+
   return (
     <div className="min-h-screen bg-gray-100 py-4 sm:py-8 px-3 sm:px-4">
       <div className="max-w-7xl mx-auto">
@@ -160,6 +168,32 @@ const Dashboard = () => {
           onFilterChange={handleFilterChange}
           districts={districts}
         />
+
+        {/* Analytics Chart */}
+        {applications.length > 0 && (
+          <div className="bg-white rounded-xl shadow-md p-4 flex flex-col items-center mb-6">
+            <h3 className="font-semibold text-gray-800 w-full text-left">Current View Statistics</h3>
+            <div className="w-full h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">

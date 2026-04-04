@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getApplicationById, acceptOffer } from '../../services/api';
+import { generateApplicationPDF } from '../../utils/pdfGenerator';
+import { getFileUrl, getDocPreviewUrl } from '../../utils/fileConfig';
 
 const ApplicationDetail = () => {
   const { id } = useParams();
@@ -9,6 +11,8 @@ const ApplicationDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [accepting, setAccepting] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [rawPreviewUrl, setRawPreviewUrl] = useState(null);
 
   useEffect(() => {
     loadApplication();
@@ -51,7 +55,6 @@ const ApplicationDetail = () => {
     }
   };
 
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   if (loading) {
     return <div className="text-center py-10">Loading application details...</div>;
@@ -84,11 +87,20 @@ const ApplicationDetail = () => {
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           {/* Header */}
           <div className="bg-gray-50 px-6 py-4 border-b">
-            <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-bold">Application #{application.applicationId}</h1>
-              <span className={`${getStatusColor(application.status)} text-white px-3 py-1 rounded-full text-sm`}>
-                {application.status?.toUpperCase()}
-              </span>
+            <div className="flex justify-between items-center flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <h1 className="text-2xl font-bold">Application #{application.applicationId}</h1>
+                <span className={`${getStatusColor(application.status)} text-white px-3 py-1 rounded-full text-sm`}>
+                  {application.status?.toUpperCase()}
+                </span>
+              </div>
+              <button 
+                onClick={() => generateApplicationPDF(application)}
+                className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-900 transition flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                Download PDF
+              </button>
             </div>
             <p className="text-gray-600 text-sm mt-1">
               Submitted: {new Date(application.submittedAt).toLocaleDateString()}
@@ -193,14 +205,15 @@ const ApplicationDetail = () => {
                   <span className="font-medium text-sm">Citizenship</span>
                 </div>
                 {application.citizenshipDocument ? (
-                  <a
-                    href={`${apiUrl}${application.citizenshipDocument}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline text-sm"
+                  <button
+                    onClick={() => {
+                      setPreviewUrl(getDocPreviewUrl(application.citizenshipDocument));
+                      setRawPreviewUrl(getFileUrl(application.citizenshipDocument));
+                    }}
+                    className="text-blue-600 hover:underline text-sm font-medium w-full text-left"
                   >
-                    View Document
-                  </a>
+                    View Document 👀
+                  </button>
                 ) : (
                   <p className="text-gray-400 text-sm">Not uploaded</p>
                 )}
@@ -212,14 +225,15 @@ const ApplicationDetail = () => {
                   <span className="font-medium text-sm">Income Proof</span>
                 </div>
                 {application.incomeProofDocument ? (
-                  <a
-                    href={`${apiUrl}${application.incomeProofDocument}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline text-sm"
+                  <button
+                    onClick={() => {
+                      setPreviewUrl(getDocPreviewUrl(application.incomeProofDocument));
+                      setRawPreviewUrl(getFileUrl(application.incomeProofDocument));
+                    }}
+                    className="text-blue-600 hover:underline text-sm font-medium w-full text-left"
                   >
-                    View Document
-                  </a>
+                    View Document 👀
+                  </button>
                 ) : (
                   <p className="text-gray-400 text-sm">Not uploaded</p>
                 )}
@@ -231,14 +245,15 @@ const ApplicationDetail = () => {
                   <span className="font-medium text-sm">Property Doc</span>
                 </div>
                 {application.propertyDocument ? (
-                  <a
-                    href={`${apiUrl}${application.propertyDocument}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline text-sm"
+                  <button
+                    onClick={() => {
+                      setPreviewUrl(getDocPreviewUrl(application.propertyDocument));
+                      setRawPreviewUrl(getFileUrl(application.propertyDocument));
+                    }}
+                    className="text-blue-600 hover:underline text-sm font-medium w-full text-left"
                   >
-                    View Document
-                  </a>
+                    View Document 👀
+                  </button>
                 ) : (
                   <p className="text-gray-400 text-sm">Not uploaded</p>
                 )}
@@ -314,6 +329,43 @@ const ApplicationDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Document Preview Modal */}
+      {previewUrl && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300">
+          <div className="bg-white rounded-xl w-full max-w-5xl h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+              <h3 className="font-semibold text-gray-800 text-lg flex items-center gap-2">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                Document Preview
+              </h3>
+              <div className="flex gap-3">
+                <a 
+                  href={rawPreviewUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="px-4 py-2 bg-blue-50 text-blue-700 font-medium rounded-lg hover:bg-blue-100 transition"
+                >
+                  Open in New Tab
+                </a>
+                <button 
+                  onClick={() => setPreviewUrl(null)} 
+                  className="px-4 py-2 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 transition"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 bg-gray-200">
+              <iframe 
+                src={previewUrl} 
+                className="w-full h-full border-0" 
+                title="Document Preview" 
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

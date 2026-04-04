@@ -22,7 +22,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const { status, data } = error.response || {};
+    // Only redirect if it's a 401 AND not a 2FA requirement
+    if (status === 401 && !data?.requires2FA) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
@@ -34,7 +36,26 @@ api.interceptors.response.use(
 // ============= AUTH APIs =============
 export const register = (userData) => api.post('/auth/register', userData);
 export const login = (credentials) => api.post('/auth/login', credentials);
+export const login2FA = (data) => api.post('/auth/2fa/login', data);
 export const getMe = () => api.get('/auth/me');
+
+// 🔐 2FA Setup
+export const setup2FA = () => api.post('/auth/2fa/setup');
+export const verify2FA = (token) => api.post('/auth/2fa/verify', { token });
+export const disable2FA = () => api.post('/auth/2fa/disable');
+
+// ============= ADMIN APIs (User Management) =============
+export const adminGetAllUsers = (filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.search) params.append('search', filters.search);
+  if (filters.role && filters.role !== 'all') params.append('role', filters.role);
+  if (filters.status && filters.status !== 'all') params.append('status', filters.status);
+  
+  return api.get(`/auth/users?${params.toString()}`);
+};
+
+export const adminUpdateUser = (id, data) => api.put(`/auth/users/${id}`, data);
+export const adminDeleteUser = (id) => api.delete(`/auth/users/${id}`);
 
 // ============= APPLICATION APIs (Citizen) =============
 export const submitApplication = (data) => api.post('/applications', data);

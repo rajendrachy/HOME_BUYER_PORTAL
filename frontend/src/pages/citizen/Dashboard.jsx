@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getMyApplications } from '../../services/api';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 const Dashboard = () => {
   const [applications, setApplications] = useState([]);
@@ -110,6 +111,14 @@ const Dashboard = () => {
   // Calculate completion percentage
   const completionPercentage = stats.total > 0 ? (stats.bankSelected / stats.total) * 100 : 0;
 
+  const pieData = [
+    { name: 'Pending', value: stats.pending, color: '#f59e0b' },
+    { name: 'Under Review', value: applications.filter(a => a.status === 'under_review').length, color: '#3b82f6' },
+    { name: 'Approved', value: stats.approved, color: '#10b981' },
+    { name: 'Rejected', value: stats.rejected, color: '#ef4444' },
+    { name: 'Bank Selected', value: stats.bankSelected, color: '#8b5cf6' }
+  ].filter(item => item.value > 0);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -169,25 +178,52 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Progress Tracker */}
+        {/* Charts and Progress Section */}
         {stats.total > 0 && (
-          <div className="bg-white rounded-xl shadow-md p-4 mb-6">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold text-gray-800">Application Progress</h3>
-              <span className="text-sm text-gray-500">{Math.round(completionPercentage)}% Complete</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 bg-gray-200 rounded-full h-2.5">
-                <div 
-                  className="bg-green-500 h-2.5 rounded-full transition-all duration-500"
-                  style={{ width: `${completionPercentage}%` }}
-                ></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Pie Chart */}
+            <div className="bg-white rounded-xl shadow-md p-4 flex flex-col items-center">
+              <h3 className="font-semibold text-gray-800 mb-4 w-full text-left">Applications by Status</h3>
+              <div className="w-full h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
             </div>
-            <div className="flex justify-between mt-2 text-xs text-gray-500">
-              <span>Submitted</span>
-              <span>Approved</span>
-              <span>Bank Selected</span>
+
+            {/* Progress Tracker */}
+            <div className="bg-white rounded-xl shadow-md p-4 flex flex-col justify-center">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-semibold text-gray-800">Overall Completion</h3>
+                <span className="text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md">{Math.round(completionPercentage)}% Complete</span>
+              </div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex-1 bg-gray-200 rounded-full h-3">
+                  <div 
+                    className="bg-green-500 h-3 rounded-full transition-all duration-1000"
+                    style={{ width: `${completionPercentage}%` }}
+                  ></div>
+                </div>
+              </div>
+              <div className="flex justify-between mt-2 text-sm font-medium text-gray-500">
+                <span className={stats.total > 0 ? "text-blue-600" : ""}>Submitted</span>
+                <span className={stats.approved > 0 ? "text-green-600" : ""}>Approved</span>
+                <span className={stats.bankSelected > 0 ? "text-purple-600" : ""}>Bank Selected</span>
+              </div>
             </div>
           </div>
         )}

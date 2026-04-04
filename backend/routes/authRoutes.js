@@ -1,8 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
-const { registerUser, loginUser, getMe, updateProfile } = require('../controllers/authController');
-const { protect } = require('../middleware/authMiddleware');
+const { 
+  registerUser, 
+  loginUser, 
+  getMe, 
+  updateProfile,
+  setup2FA,
+  verify2FA,
+  login2FA,
+  disable2FA,
+  adminGetAllUsers,
+  adminUpdateUser,
+  adminDeleteUser
+} = require('../controllers/authController');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
 // Validation rules for registration
 const registerValidation = [
@@ -19,10 +31,23 @@ router.post('/register', registerValidation, registerUser);
 // @route   POST /api/auth/login
 router.post('/login', loginUser);
 
+// @route   POST /api/auth/2fa/login
+router.post('/2fa/login', login2FA);
+
 // @route   GET /api/auth/me
 router.get('/me', protect, getMe);
 
 // @route   PUT /api/auth/profile
 router.put('/profile', protect, updateProfile);
+
+// 🔐 2FA Routes
+router.post('/2fa/setup', protect, setup2FA);
+router.post('/2fa/verify', protect, verify2FA);
+router.post('/2fa/disable', protect, disable2FA);
+
+// 🛠️ Admin User Management Routes
+router.get('/users', protect, authorize('admin'), adminGetAllUsers);
+router.put('/users/:id', protect, authorize('admin'), adminUpdateUser);
+router.delete('/users/:id', protect, authorize('admin'), adminDeleteUser);
 
 module.exports = router;

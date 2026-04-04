@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getApplicationById, updateApplicationStatus } from '../../services/api';
+import { getFileUrl, getDocPreviewUrl } from '../../utils/fileConfig';
 
 const ApplicationReview = () => {
   const { id } = useParams();
@@ -70,8 +71,6 @@ const ApplicationReview = () => {
     }
   };
 
-  // Get API URL for document links
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   if (loading) {
     return <div className="text-center py-10">Loading...</div>;
@@ -222,7 +221,7 @@ const ApplicationReview = () => {
                     <span className="font-medium text-sm">Citizenship</span>
                   </div>
                   <a
-                    href={`${apiUrl}${application.citizenshipDocument}`}
+                    href={getDocPreviewUrl(application.citizenshipDocument)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline text-sm flex items-center gap-1"
@@ -252,7 +251,7 @@ const ApplicationReview = () => {
                     <span className="font-medium text-sm">Income Proof</span>
                   </div>
                   <a
-                    href={`${apiUrl}${application.incomeProofDocument}`}
+                    href={getDocPreviewUrl(application.incomeProofDocument)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline text-sm flex items-center gap-1"
@@ -282,7 +281,7 @@ const ApplicationReview = () => {
                     <span className="font-medium text-sm">Property Doc</span>
                   </div>
                   <a
-                    href={`${apiUrl}${application.propertyDocument}`}
+                    href={getDocPreviewUrl(application.propertyDocument)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline text-sm flex items-center gap-1"

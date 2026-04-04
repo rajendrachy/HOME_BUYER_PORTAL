@@ -9,6 +9,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import TrackApplication from './pages/TrackApplication';
+import Profile from './pages/Profile';
 
 // Citizen Pages
 import CitizenDashboard from './pages/citizen/Dashboard';
@@ -59,6 +60,11 @@ function AppRoutes() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/track" element={<TrackApplication />} />
+        <Route path="/profile" element={
+          <PrivateRoute>
+            <Profile />
+          </PrivateRoute>
+        } />
 
         {/* Citizen Routes */}
         <Route path="/citizen/dashboard" element={
@@ -140,11 +146,17 @@ function AppRoutes() {
   );
 }
 
+import { SocketProvider } from './contexts/SocketContext';
+import { Toaster } from 'react-hot-toast';
+
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <SocketProvider>
+          <Toaster position="top-right" />
+          <AppRoutes />
+        </SocketProvider>
       </AuthProvider>
     </BrowserRouter>
   );
