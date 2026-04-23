@@ -260,7 +260,8 @@ const ApplicationReview = () => {
                           {[
                             { id: 'under_review', l: 'Under Review', c: 'text-blue-600', bg: 'bg-blue-50', i: Info },
                             { id: 'approved', l: 'Authorize Approval', c: 'text-emerald-600', bg: 'bg-emerald-50', i: CheckCircle2 },
-                            { id: 'rejected', l: 'Reject Application', c: 'text-rose-600', bg: 'bg-rose-50', i: XCircle }
+                            { id: 'rejected', l: 'Reject Application', c: 'text-rose-600', bg: 'bg-rose-50', i: XCircle },
+                            { id: 'completed', l: 'Finalize / Disburse Grant', c: 'text-indigo-600', bg: 'bg-indigo-50', i: ClipboardCheck }
                           ].map((opt) => (
                              <button
                                 key={opt.id}
