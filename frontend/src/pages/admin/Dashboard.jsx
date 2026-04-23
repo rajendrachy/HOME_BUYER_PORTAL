@@ -592,11 +592,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
-
-      </div>
-    </div>
-  );
-};
-
-export default AdminDashboard;
