@@ -10,6 +10,7 @@ const {
   verify2FA,
   login2FA,
   disable2FA,
+  recover2FA,
   adminGetAllUsers,
   adminUpdateUser,
   adminDeleteUser
@@ -34,11 +35,33 @@ router.post('/login', loginUser);
 // @route   POST /api/auth/2fa/login
 router.post('/2fa/login', login2FA);
 
+// @route   POST /api/auth/2fa/recover
+router.post('/2fa/recover', recover2FA);
+
 // @route   GET /api/auth/me
 router.get('/me', protect, getMe);
 
 // @route   PUT /api/auth/profile
 router.put('/profile', protect, updateProfile);
+
+// @route   POST /api/auth/profile-image
+const { upload } = require('../middleware/uploadMiddleware');
+router.post('/profile-image', protect, upload.single('profileImage'), async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    if (req.file && req.file.path) {
+      user.profileImage = req.file.path;
+      await user.save();
+      return res.json({ success: true, profileImage: user.profileImage });
+    }
+    res.status(400).json({ message: 'No file uploaded' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
 
 // 🔐 2FA Routes
 router.post('/2fa/setup', protect, setup2FA);

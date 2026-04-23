@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Building2, Mail, Lock, ArrowRight, ShieldCheck, Sparkles, ChevronLeft } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -11,8 +13,10 @@ const Login = () => {
   const [requires2FA, setRequires2FA] = useState(false);
   const [twoFactorToken, setTwoFactorToken] = useState('');
   const [userId, setUserId] = useState(null);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const [recoveryCode, setRecoveryCode] = useState('');
   
-  const { login, verifyLogin2FA } = useAuth();
+  const { login, verifyLogin2FA, recover2FA } = useAuth();
   const navigate = useNavigate();
 
   const handleRedirect = (user) => {
@@ -24,8 +28,26 @@ const Login = () => {
     else navigate('/');
   };
 
+  const handleRecovery = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await recover2FA(email, recoveryCode);
+      toast.success('Identity protection layer deactivated. Please login with your password.');
+      setRequires2FA(false);
+      setIsRecoveryMode(false);
+      setRecoveryCode('');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Recovery failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isRecoveryMode) return handleRecovery(e);
+    
     setError('');
     setLoading(true);
 
@@ -53,179 +75,254 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full">
-        {/* Logo/Brand Section */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-600 to-blue-500 rounded-2xl shadow-lg mb-4">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-          </div>
-          <h2 className="text-3xl font-extrabold text-gray-900">{requires2FA ? 'Two-Factor Auth' : 'Welcome Back'}</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            {requires2FA ? 'Enter the code from your authenticator app' : 'Sign in to your account to continue'}
-          </p>
-        </div>
-
-        {/* Login Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          {error && (
-            <div className="mb-4 p-4 rounded-lg bg-red-50 border border-red-200">
-              <div className="flex items-center">
-                <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
+    <div className="min-h-screen flex bg-white font-sans selection:bg-blue-600 selection:text-white">
+      {/* Left Side: Illustration & Branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-slate-900 relative overflow-hidden flex-col justify-between p-20">
+         <div className="absolute inset-0 z-0">
+            <img 
+               src="/images/hero-bg.png" 
+               alt="Luxury Home" 
+               className="w-full h-full object-cover opacity-20 scale-110"
+            />
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-transparent to-slate-900" />
+         </div>
+         
+         <div className="relative z-10">
+            <div className="flex items-center gap-4 mb-12 cursor-pointer" onClick={() => navigate("/")}>
+               <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-2xl">
+                  <Building2 size={28} />
+               </div>
+               <span className="text-2xl font-black tracking-tighter text-white">
+                  HomeBuyer<span className="text-blue-500">.</span>
+               </span>
             </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {!requires2FA ? (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                      </svg>
-                    </div>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150 ease-in-out"
-                      placeholder="you@example.com"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6-4h12a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6a2 2 0 012-2zm10-4V6a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                    </div>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150 ease-in-out"
-                      placeholder="••••••••"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <span className="ml-2 text-sm text-gray-600">Remember me</span>
-                  </label>
-                  <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-500">
-                    Forgot password?
-                  </Link>
-                </div>
-              </>
-            ) : (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Authentication Code
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6-4h12a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6a2 2 0 012-2zm10-4V6a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  </div>
-                  <input
-                    type="text"
-                    value={twoFactorToken}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9]/g, '');
-                      setTwoFactorToken(val);
-                    }}
-                    className="block w-full px-4 py-4 border-2 border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all text-center text-4xl tracking-[0.5em] font-black placeholder:text-gray-200"
-                    placeholder="000000"
-                    maxLength={6}
-                    required
-                    autoFocus
-                  />
-                </div>
-                <button 
-                  type="button"
-                  onClick={() => setRequires2FA(false)}
-                  className="mt-4 text-sm text-blue-600 hover:text-blue-500"
-                >
-                  ← Back to login
-                </button>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              ) : (
-                requires2FA ? 'Verify Code' : 'Sign In'
-              )}
-            </button>
-          </form>
-
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500 text-center mb-2 font-bold uppercase tracking-wider">Demo Credentials</p>
-            <div className="grid grid-cols-2 gap-4 text-[10px]">
-              <div className="text-center p-2 bg-white rounded shadow-sm">
-                <p className="font-bold text-blue-600">Citizen</p>
-                <p className="text-gray-500">hari@gmail.com</p>
-                <p className="text-gray-500 font-mono">password123</p>
-              </div>
-              <div className="text-center p-2 bg-white rounded shadow-sm">
-                <p className="font-bold text-blue-600">Officer</p>
-                <p className="text-gray-500">officer@kmc.gov.np</p>
-                <p className="text-gray-500 font-mono">password123</p>
-              </div>
-              <div className="text-center p-2 bg-white rounded shadow-sm">
-                <p className="font-bold text-blue-600">Bank</p>
-                <p className="text-gray-500">sita@nabil.com</p>
-                <p className="text-gray-500 font-mono">password123</p>
-              </div>
-              <div className="text-center p-2 bg-indigo-50 rounded shadow-sm border border-indigo-100">
-                <p className="font-bold text-indigo-700">Admin</p>
-                <p className="text-indigo-900 font-medium">admin@portal.gov.np</p>
-                <p className="text-indigo-900 font-mono font-bold">password123</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
-                Register here
-              </Link>
+            
+            <h1 className="text-6xl font-black text-white leading-tight tracking-tighter mb-8">
+               Secure Access to <br />Your Future Home.
+            </h1>
+            <p className="text-xl text-slate-400 font-medium max-w-md">
+               Manage your applications, track subsidies, and explore bank offers in one professional environment.
             </p>
-          </div>
-        </div>
+         </div>
+
+         <div className="relative z-10">
+            <div className="p-8 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem]">
+               <div className="flex items-center gap-4 mb-4">
+                  <ShieldCheck className="text-blue-400" />
+                  <span className="text-xs font-black uppercase tracking-[0.2em] text-white">Government Grade Security</span>
+               </div>
+               <p className="text-slate-400 text-sm font-medium">
+                  Your data is protected by AES-256 encryption and biometric-ready 2FA verification.
+               </p>
+            </div>
+         </div>
+      </div>
+
+      {/* Right Side: Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 md:p-20 bg-slate-50/50">
+          <motion.div 
+             initial={{ opacity: 0, x: 20 }}
+             animate={{ opacity: 1, x: 0 }}
+             className="w-full max-w-md"
+          >
+             <div className="mb-12">
+               <div className="lg:hidden flex items-center gap-4 mb-10">
+                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white">
+                     <Building2 size={24} />
+                  </div>
+                  <span className="text-2xl font-black tracking-tighter text-slate-900">HomeBuyer.</span>
+               </div>
+               <h2 className="text-5xl font-black text-slate-900 mb-5 tracking-[-0.03em] leading-tight">
+                  {isRecoveryMode ? 'Account Recovery' : requires2FA ? 'Identity Verification' : 'Welcome Back'}
+               </h2>
+               <p className="text-lg text-slate-600 font-medium leading-relaxed max-w-sm">
+                  {isRecoveryMode 
+                    ? 'Enter an 8-digit recovery code to deactivate the security protocol.' 
+                    : requires2FA 
+                      ? 'Please enter your 6-digit cryptographic security token.' 
+                      : 'Sign in to access your administrative and personal housing portal.'
+                  }
+               </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-8">
+               <AnimatePresence mode="wait">
+                  {!requires2FA && !isRecoveryMode ? (
+                     <motion.div 
+                        key="login"
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        className="space-y-8"
+                     >
+                        <div className="space-y-3">
+                           <label className="block text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Portal Email Node</label>
+                           <div className="relative group">
+                              <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-slate-300 group-focus-within:text-blue-600 transition-colors">
+                                 <Mail size={22} />
+                              </div>
+                              <input
+                                 type="email"
+                                 value={email}
+                                 onChange={(e) => setEmail(e.target.value)}
+                                 className="w-full pl-16 pr-8 py-6 bg-white border border-slate-100 rounded-[2rem] focus:outline-none focus:ring-[10px] focus:ring-blue-600/5 focus:border-blue-600 transition-all font-black text-slate-900 text-lg shadow-sm placeholder:text-slate-200"
+                                 placeholder="active@node.com"
+                                 required
+                              />
+                           </div>
+                        </div>
+
+                        <div className="space-y-3">
+                           <div className="flex justify-between items-center px-1">
+                              <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Security Passkey</label>
+                              <Link to="/forgot-password" size={12} className="text-[11px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700">Lost Key?</Link>
+                           </div>
+                           <div className="relative group">
+                              <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-slate-300 group-focus-within:text-blue-600 transition-colors">
+                                 <Lock size={22} />
+                              </div>
+                              <input
+                                 type="password"
+                                 value={password}
+                                 onChange={(e) => setPassword(e.target.value)}
+                                 className="w-full pl-16 pr-8 py-6 bg-white border border-slate-100 rounded-[2rem] focus:outline-none focus:ring-[10px] focus:ring-blue-600/5 focus:border-blue-600 transition-all font-black text-slate-900 text-lg shadow-sm placeholder:text-slate-200"
+                                 placeholder="••••••••"
+                                 required
+                              />
+                           </div>
+                        </div>
+                     </motion.div>
+                  ) : requires2FA && !isRecoveryMode ? (
+                     <motion.div 
+                        key="2fa"
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                     >
+                        <div className="relative group">
+                           <input
+                              type="text"
+                              value={twoFactorToken}
+                              onChange={(e) => {
+                                 const val = e.target.value.replace(/[^0-9]/g, '');
+                                 setTwoFactorToken(val);
+                              }}
+                              className="w-full py-10 bg-white border-2 border-slate-100 rounded-[3rem] focus:outline-none focus:ring-[15px] focus:ring-blue-600/5 focus:border-blue-600 transition-all text-center text-6xl tracking-[0.6em] font-black placeholder:text-slate-50 text-slate-900"
+                              placeholder="000000"
+                              maxLength={6}
+                              required
+                              autoFocus
+                           />
+                        </div>
+                        <div className="mt-10 flex justify-between items-center">
+                           <button 
+                              type="button"
+                              onClick={() => setRequires2FA(false)}
+                              className="flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-blue-600 transition-colors"
+                           >
+                              <ChevronLeft size={16} /> Identity Switch
+                           </button>
+                           <button 
+                              type="button"
+                              onClick={() => setIsRecoveryMode(true)}
+                              className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600 hover:text-blue-700 transition-colors"
+                           >
+                              Lost Security Device?
+                           </button>
+                        </div>
+                     </motion.div>
+                  ) : (
+                    <motion.div 
+                        key="recovery"
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        className="space-y-8"
+                     >
+                        <div className="space-y-3">
+                           <label className="block text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Hardware Recovery Token</label>
+                           <div className="relative group">
+                              <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-slate-300 group-focus-within:text-blue-600 transition-colors">
+                                 <ShieldCheck size={24} />
+                              </div>
+                              <input
+                                 type="text"
+                                 value={recoveryCode}
+                                 onChange={(e) => setRecoveryCode(e.target.value.toUpperCase())}
+                                 className="w-full pl-16 pr-8 py-6 bg-white border border-slate-100 rounded-[2rem] focus:outline-none focus:ring-[10px] focus:ring-blue-600/5 focus:border-blue-600 transition-all font-black text-blue-600 tracking-[0.3em] text-lg shadow-sm placeholder:text-slate-100"
+                                 placeholder="XXXXXXXX"
+                                 maxLength={8}
+                                 required
+                                 autoFocus
+                              />
+                           </div>
+                        </div>
+                        <button 
+                           type="button"
+                           onClick={() => setIsRecoveryMode(false)}
+                           className="flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-blue-600 transition-colors"
+                        >
+                           <ChevronLeft size={16} /> Back to MFA
+                        </button>
+                     </motion.div>
+                  )}
+               </AnimatePresence>
+
+               <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-8 bg-slate-900 text-white rounded-[2.5rem] text-[12px] font-black uppercase tracking-[0.3em] shadow-2xl shadow-slate-900/20 hover:bg-blue-600 hover:-translate-y-2 transition-all duration-500 flex items-center justify-center gap-4 disabled:opacity-50 disabled:translate-y-0"
+               >
+                  {loading ? (
+                    <div className="w-8 h-8 border-[5px] border-white/20 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                       {isRecoveryMode 
+                         ? 'Deactivate Protection Layer' 
+                         : requires2FA 
+                           ? 'Authorize Portal Entry' 
+                           : 'Synchronize Portal'
+                       }
+                       <ArrowRight size={22} />
+                    </>
+                  )}
+               </button>
+            </form>
+
+            <div className="mt-16">
+               <div className="relative py-6">
+                  <div className="absolute inset-0 flex items-center">
+                     <div className="w-full border-t border-slate-200/60"></div>
+                  </div>
+                  <div className="relative flex justify-center text-[11px] font-black uppercase tracking-[0.4em]">
+                     <span className="bg-[#fafbfc] px-6 text-slate-300">Operational Nodes</span>
+                  </div>
+               </div>
+               <div className="grid grid-cols-2 gap-5 mt-10">
+                  {[
+                    { r: "Citizen", e: "hari@gmail.com", p: "password123" },
+                    { r: "Municipal", e: "officer@kmc.gov.np", p: "password123" },
+                    { r: "Bank Unit", e: "manager@nimb.com.np", p: "password123" },
+                    { r: "Command", e: "admin@portal.gov.np", p: "password123" }
+                  ].map((cred, i) => (
+                    <div key={i} className="p-5 bg-white rounded-[2rem] border border-slate-100 shadow-sm group hover:border-blue-500/30 transition-all duration-500">
+                       <p className="font-black text-blue-600 uppercase tracking-widest text-[9px] mb-2">{cred.r}</p>
+                       <p className="text-slate-900 font-bold text-[10px] mb-1 truncate">{cred.e}</p>
+                       <p className="text-slate-300 font-black text-[9px]">ID: password123</p>
+                    </div>
+                  ))}
+               </div>
+            </div>
+
+            <div className="mt-16 text-center">
+               <p className="text-sm font-medium text-slate-400">
+                  New to the government network?{' '}
+                  <Link to="/register" className="font-black text-blue-600 hover:text-blue-700 uppercase tracking-[0.2em] text-[11px] ml-2">
+                     Initialize Account
+                  </Link>
+               </p>
+            </div>
+         </motion.div>
       </div>
     </div>
   );

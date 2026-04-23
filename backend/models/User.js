@@ -72,6 +72,10 @@ const userSchema = new mongoose.Schema({
   isTwoFactorEnabled: {
     type: Boolean,
     default: false
+  },
+  twoFactorRecoveryCodes: {
+    type: [String],
+    select: false
   }
 }, {
   timestamps: true

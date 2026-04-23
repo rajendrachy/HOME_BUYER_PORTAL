@@ -2,53 +2,87 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer utilities {
-  .glass {
-    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl;
+@layer base {
+  html {
+    scroll-behavior: smooth;
   }
-  
-  .glass-dark {
-    @apply bg-gray-900/70 backdrop-blur-md border border-gray-800 shadow-2xl;
-  }
-
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600;
-  }
-
-  .btn-premium {
-    @apply px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all;
+  body {
+    @apply bg-[#fafbfc] text-slate-900 antialiased;
+    font-family: 'Outfit', sans-serif;
+    color: #0f172a; /* Force slate-900 for better reliability */
   }
 }
 
-/* Custom Scrollbar for premium feel */
+@layer components {
+  .text-description {
+    @apply text-slate-600 font-medium leading-relaxed;
+  }
+  .text-label {
+    @apply text-slate-500 font-black uppercase tracking-widest text-[10px];
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
+  }
+  
+  .glass-dark {
+    @apply bg-slate-900/80 backdrop-blur-xl border border-slate-800 shadow-2xl;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700;
+  }
+
+  .btn-premium {
+    @apply px-10 py-5 bg-slate-900 text-white font-black uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-slate-900/20 hover:shadow-blue-500/40 hover:bg-blue-600 hover:-translate-y-1.5 transition-all duration-500 active:scale-95;
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-shine {
+    animation: shine 5s linear infinite;
+  }
+
+  .mask-radial {
+    mask-image: radial-gradient(circle, black, transparent 70%);
+  }
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 10px;
+  border-radius: 20px;
+  border: 2px solid #fafbfc;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 
-/* Animations */
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-15px) rotate(1deg); }
+  66% { transform: translateY(5px) rotate(-1deg); }
 }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
+@keyframes shine {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
 }
 
-body {
-  @apply bg-gray-50 text-gray-900 antialiased;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+/* Typography refinements */
+h1, h2, h3, h4 {
+  @apply tracking-tight;
+  font-weight: 900;
 }
 
 

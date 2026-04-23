@@ -5,6 +5,13 @@ const { validationResult } = require('express-validator');
 const { generateSecret, generateQRCode, verifyToken } = require('../utils/twoFactor');
 const { sendNotification } = require('../utils/notify');
 
+// Generate Recovery Codes
+const generateRecoveryCodes = () => {
+  return Array.from({ length: 8 }, () => 
+    Math.random().toString(36).substring(2, 10).toUpperCase()
+  );
+};
+
 // Generate JWT Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -168,6 +175,7 @@ const updateProfile = async (req, res) => {
     // Update fields
     user.name = req.body.name || user.name;
     user.phone = req.body.phone || user.phone;
+    user.email = req.body.email || user.email;
     
     if (req.body.address) {
       user.address = req.body.address;
@@ -186,7 +194,8 @@ const updateProfile = async (req, res) => {
       email: updatedUser.email,
       phone: updatedUser.phone,
       role: updatedUser.role,
-      bankName: updatedUser.bankName,  // ✅ Return bank name
+      bankName: updatedUser.bankName,
+      profileImage: updatedUser.profileImage,
       token: generateToken(updatedUser._id)
     });
   } catch (error) {
@@ -237,13 +246,21 @@ const verify2FA = async (req, res) => {
       return res.status(400).json({ message: 'Invalid authentication token. Please ensure your phone time is correct.' });
     }
     
+    // Generate recovery codes
+    const recoveryCodes = generateRecoveryCodes();
+    
     // Promote temp secret to permanent
     user.twoFactorSecret = user.tempTwoFactorSecret;
     user.tempTwoFactorSecret = null;
     user.isTwoFactorEnabled = true;
+    user.twoFactorRecoveryCodes = recoveryCodes;
     await user.save();
     
-    res.json({ success: true, message: 'Two-factor authentication enabled successfully' });
+    res.json({ 
+      success: true, 
+      message: 'Two-factor authentication enabled successfully',
+      recoveryCodes 
+    });
   } catch (error) {
     res.status(500).json({ message: 'Failed to verify 2FA', error: error.message });
   }
@@ -255,16 +272,26 @@ const verify2FA = async (req, res) => {
 const login2FA = async (req, res) => {
   try {
     const { userId, token } = req.body;
-    const user = await User.findById(userId).select('+twoFactorSecret');
+    const user = await User.findById(userId).select('+twoFactorSecret +twoFactorRecoveryCodes');
     
     if (!user || !user.isTwoFactorEnabled) {
       return res.status(401).json({ message: 'Authentication failed' });
     }
     
-    const isValid = verifyToken(user.twoFactorSecret, token);
+    let isValid = verifyToken(user.twoFactorSecret, token);
+    let usedRecoveryCode = false;
+
+    // If not valid TOTP, check if it's a recovery code
+    if (!isValid && user.twoFactorRecoveryCodes?.includes(token.toUpperCase())) {
+      isValid = true;
+      usedRecoveryCode = true;
+      // Remove used recovery code
+      user.twoFactorRecoveryCodes = user.twoFactorRecoveryCodes.filter(c => c !== token.toUpperCase());
+      await user.save();
+    }
     
     if (!isValid) {
-      return res.status(401).json({ message: 'Invalid authentication token' });
+      return res.status(401).json({ message: 'Invalid authentication token or recovery code' });
     }
     
     res.json({
@@ -275,10 +302,39 @@ const login2FA = async (req, res) => {
       citizenshipNumber: user.citizenshipNumber,
       role: user.role,
       bankName: user.bankName,
-      token: generateToken(user._id)
+      token: generateToken(user._id),
+      recoveryUsed: usedRecoveryCode
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Recover account (Disable 2FA using recovery code)
+// @route   POST /api/auth/2fa/recover
+// @access  Public
+const recover2FA = async (req, res) => {
+  try {
+    const { email, recoveryCode } = req.body;
+    const user = await User.findOne({ email }).select('+twoFactorRecoveryCodes +twoFactorSecret');
+    
+    if (!user || !user.isTwoFactorEnabled) {
+      return res.status(404).json({ message: 'Account not found or 2FA not enabled' });
+    }
+    
+    if (!user.twoFactorRecoveryCodes?.includes(recoveryCode.toUpperCase())) {
+      return res.status(401).json({ message: 'Invalid recovery code' });
+    }
+    
+    // Disable 2FA
+    user.isTwoFactorEnabled = false;
+    user.twoFactorSecret = null;
+    user.twoFactorRecoveryCodes = [];
+    await user.save();
+    
+    res.json({ success: true, message: 'Identity protection layer deactivated. You can now login with your password.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Recovery failed', error: error.message });
   }
 };
 
@@ -411,6 +467,7 @@ module.exports = {
   verify2FA,
   login2FA,
   disable2FA,
+  recover2FA,
   adminGetAllUsers,
   adminUpdateUser,
   adminDeleteUser

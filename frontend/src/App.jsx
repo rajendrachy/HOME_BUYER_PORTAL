@@ -1,8 +1,11 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth, AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Layout/Navbar';
+import Footer from './components/Layout/Footer';
 import BankApplicationDetail from './pages/bank/ApplicationDetail';
+import { SocketProvider } from './contexts/SocketContext';
+import { Toaster } from 'react-hot-toast';
 
 // Pages
 import Home from './pages/Home';
@@ -29,6 +32,7 @@ import MyOffers from './pages/bank/MyOffers';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
+import NotFound from './pages/NotFound';
 
 const PrivateRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
@@ -50,10 +54,12 @@ const PrivateRoute = ({ children, allowedRoles }) => {
 
 function AppRoutes() {
   const { user } = useAuth();
+  const location = useLocation();
+  const isHomePage = location.pathname === '/';
 
   return (
     <>
-      <Navbar />
+      {!isHomePage && <Navbar />}
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
@@ -100,8 +106,6 @@ function AppRoutes() {
           </PrivateRoute>
         } />
 
-
-
         {/* Bank Officer Routes */}
         <Route path="/bank/dashboard" element={
           <PrivateRoute allowedRoles={['bank_officer', 'admin']}>
@@ -119,13 +123,11 @@ function AppRoutes() {
           </PrivateRoute>
         } />
 
-        
-
         <Route path="/bank/application/:id" element={
          <PrivateRoute allowedRoles={['bank_officer', 'admin']}>
-       <BankApplicationDetail />
-      </PrivateRoute>
-    } />
+           <BankApplicationDetail />
+         </PrivateRoute>
+        } />
     
         <Route path="/bank/offers" element={
           <PrivateRoute allowedRoles={['bank_officer', 'admin']}>
@@ -133,28 +135,45 @@ function AppRoutes() {
           </PrivateRoute>
         } />
 
-
-
         {/* Admin Routes */}
         <Route path="/admin/dashboard" element={
           <PrivateRoute allowedRoles={['admin']}>
             <AdminDashboard />
           </PrivateRoute>
         } />
+
+        {/* Fallback */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
+      <Footer />
     </>
   );
 }
 
-import { SocketProvider } from './contexts/SocketContext';
-import { Toaster } from 'react-hot-toast';
+
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <SocketProvider>
-          <Toaster position="top-right" />
+          <Toaster 
+            position="top-right" 
+            toastOptions={{
+              className: 'premium-toast',
+              style: {
+                background: '#0f172a',
+                color: '#fff',
+                borderRadius: '1.5rem',
+                padding: '1.25rem 2rem',
+                fontSize: '0.75rem',
+                fontWeight: '900',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
+              },
+            }}
+          />
           <AppRoutes />
         </SocketProvider>
       </AuthProvider>
@@ -163,8 +182,3 @@ function App() {
 }
 
 export default App;
-
-
-
-
-

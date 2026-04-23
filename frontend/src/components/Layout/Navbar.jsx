@@ -1,15 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Bell, User, LogOut, Menu, X, 
+  Search, ShieldCheck, Activity,
+  ChevronDown, MessageSquare,
+  LayoutDashboard
+} from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useSocket() || { notifications: [], unreadCount: 0 };
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -29,232 +44,277 @@ const Navbar = () => {
     }
   };
 
+  const navLinks = [
+    { label: 'Market Feed', path: '/', icon: Activity },
+    { label: 'Track Ledger', path: '/track', icon: Search }
+  ];
+
+  if (user) {
+    navLinks.push({ label: 'Command Center', path: getDashboardLink(), icon: LayoutDashboard });
+  }
+
   return (
-    <nav className="bg-blue-600 text-white shadow-lg" role="navigation" aria-label="Main navigation">
-      <div className="container mx-auto px-4 py-3">
+    <nav 
+      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 font-sans ${
+        isScrolled 
+          ? 'bg-white/80 backdrop-blur-xl py-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-b border-slate-100' 
+          : 'bg-transparent py-6'
+      }`}
+    >
+      <div className="max-w-[1600px] mx-auto px-6 lg:px-12">
         <div className="flex justify-between items-center">
-          {/* Logo */}
-          <Link to="/" className="text-2xl font-bold hover:text-blue-100 transition" aria-label="Home Buyer Portal Home">
-            🏠 Home Buyer Portal
+          
+          {/* Logo Section */}
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-xl shadow-slate-900/10 group-hover:scale-110 transition-transform">
+              <ShieldCheck size={22} />
+            </div>
+            <div>
+              <span className="text-xl font-black tracking-tighter leading-none block text-slate-900">
+                HomeBuyer
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600 block leading-none mt-1">
+                Portal
+              </span>
+            </div>
           </Link>
 
-          {/* Hamburger Menu Button - Mobile Only */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden flex flex-col gap-1"
-            aria-label="Toggle navigation menu"
-            aria-expanded={mobileMenuOpen}
-          >
-            <span className="w-6 h-0.5 bg-white"></span>
-            <span className="w-6 h-0.5 bg-white"></span>
-            <span className="w-6 h-0.5 bg-white"></span>
-          </button>
-
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-4 items-center">
-            <Link
-              to="/track"
-              className={`py-2 px-1 transition ${
-                isActive('/track')
-                  ? 'text-white border-b-2 border-white'
-                  : 'hover:text-blue-200'
-              }`}
-              aria-current={isActive('/track') ? 'page' : undefined}
-            >
-              Track Application
-            </Link>
+          <div className="hidden lg:flex items-center gap-10">
+            <div className="flex items-center gap-8 mr-8">
+              {navLinks.map((link) => (
+                <Link 
+                  key={link.path} 
+                  to={link.path}
+                  className={`text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 transition-all ${
+                    isActive(link.path) ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  <link.icon size={14} />
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+
+            <div className="h-6 w-px bg-slate-200" />
 
             {user ? (
-              <>
-                <Link
-                  to={getDashboardLink()}
-                  className={`py-2 px-1 transition ${
-                    isActive(getDashboardLink())
-                      ? 'text-white border-b-2 border-white'
-                      : 'hover:text-blue-200'
-                  }`}
-                  aria-current={isActive(getDashboardLink()) ? 'page' : undefined}
-                >
-                  Dashboard
-                </Link>
-
-                {/* NOTIFICATION BELL */}
+              <div className="flex items-center gap-6">
+                {/* Notifications */}
                 <div className="relative">
                   <button 
                     onClick={() => setShowNotifications(!showNotifications)}
-                    className="relative p-2 text-white hover:text-blue-200 focus:outline-none transition"
+                    className={`relative w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
+                      showNotifications ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                    }`}
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                    <Bell size={20} />
                     {unreadCount > 0 && (
-                      <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full inline-flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white">
                         {unreadCount}
                       </span>
                     )}
                   </button>
 
-                  {/* Dropdown Panel */}
-                  {showNotifications && (
-                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
-                      <div className="p-3 border-b bg-gray-50 flex justify-between items-center text-gray-800">
-                        <h3 className="font-semibold text-sm">Notifications</h3>
-                        {unreadCount > 0 && (
-                          <button onClick={markAllAsRead} className="text-xs text-blue-600 hover:underline">
-                            Mark all as read
-                          </button>
-                        )}
-                      </div>
-                      <div className="max-h-80 overflow-y-auto">
-                        {notifications.length === 0 ? (
-                          <p className="p-4 text-center text-sm text-gray-500">No notifications yet.</p>
-                        ) : (
-                          notifications.map((notif) => (
-                            <div 
-                              key={notif._id} 
-                              onClick={() => {
-                                if (!notif.isRead) markAsRead(notif._id);
-                                if (notif.link) {
-                                  navigate(notif.link);
-                                  setShowNotifications(false);
-                                }
-                              }}
-                              className={`p-3 border-b cursor-pointer hover:bg-gray-50 transition ${!notif.isRead ? 'bg-blue-50/50' : 'bg-white'}`}
-                            >
-                              <p className="text-sm text-gray-800 font-medium">{notif.title}</p>
-                              <p className="text-xs text-gray-600 mt-1">{notif.message}</p>
+                  <AnimatePresence>
+                    {showNotifications && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute right-0 mt-4 w-96 bg-white rounded-[2rem] shadow-2xl border border-slate-100 overflow-hidden z-50"
+                      >
+                        <div className="p-8 border-b border-slate-50 flex justify-between items-center">
+                          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Global Feed</h3>
+                          {unreadCount > 0 && (
+                            <button onClick={markAllAsRead} className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline">
+                              Flush All
+                            </button>
+                          )}
+                        </div>
+                        <div className="max-h-[400px] overflow-y-auto no-scrollbar">
+                          {notifications.length === 0 ? (
+                            <div className="p-12 text-center">
+                              <MessageSquare size={32} className="text-slate-100 mx-auto mb-4" />
+                              <p className="text-xs font-black text-slate-500 uppercase tracking-widest">All Clear</p>
                             </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <Link 
-                  to="/profile" 
-                  className={`py-2 px-1 transition ${isActive('/profile') ? 'text-white border-b-2 border-white' : 'hover:text-blue-200'} flex items-center`}
-                >
-                  <span className="text-sm font-medium mr-1">👤</span>
-                  <span className="text-sm font-medium">{user.name}</span>
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="bg-red-500 px-4 py-2 text-sm font-medium rounded-lg hover:bg-red-600 transition shadow-sm"
-                  aria-label="Logout"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className={`py-2 px-1 transition ${
-                    isActive('/login')
-                      ? 'text-white border-b-2 border-white'
-                      : 'hover:text-blue-200'
-                  }`}
-                  aria-current={isActive('/login') ? 'page' : undefined}
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  className="bg-green-500 px-4 py-2 rounded hover:bg-green-600 transition"
-                  aria-label="Register"
-                >
-                  Register
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Mobile Navigation Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 border-t border-blue-500 pt-4 space-y-3">
-            <Link
-              to="/track"
-              className={`block py-2 px-1 transition ${
-                isActive('/track')
-                  ? 'text-white bg-blue-700 px-3 rounded'
-                  : 'hover:text-blue-200'
-              }`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Track Application
-            </Link>
-
-            {user ? (
-              <>
-                <Link
-                  to={getDashboardLink()}
-                  className={`block py-2 px-1 transition ${
-                    isActive(getDashboardLink())
-                      ? 'text-white bg-blue-700 px-3 rounded'
-                      : 'hover:text-blue-200'
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
-                
-                {/* Mobile Notification Area */}
-                <div className="py-2 px-1">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">Notifications</span>
-                    {unreadCount > 0 && (
-                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">{unreadCount} New</span>
+                          ) : (
+                            notifications.map((notif) => (
+                              <div 
+                                key={notif._id} 
+                                onClick={() => {
+                                  if (!notif.isRead) markAsRead(notif._id);
+                                  if (notif.link) { navigate(notif.link); setShowNotifications(false); }
+                                }}
+                                className={`p-8 border-b border-slate-50 cursor-pointer hover:bg-slate-50 transition-all ${!notif.isRead ? 'bg-blue-50/20' : 'bg-white'}`}
+                              >
+                                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-2">{notif.title}</p>
+                                <p className="text-sm font-bold text-slate-900 leading-snug">{notif.message}</p>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </motion.div>
                     )}
-                  </div>
-                  <div className="bg-blue-700/50 rounded-lg p-2 max-h-40 overflow-y-auto">
-                     {notifications.length === 0 ? (
-                        <p className="text-sm text-blue-200">No notifications yet.</p>
-                      ) : (
-                        notifications.slice(0, 5).map(notif => (
-                          <div key={notif._id} className="text-sm py-1 border-b border-blue-600/50 last:border-0" onClick={() => { if (!notif.isRead) markAsRead(notif._id); if (notif.link) navigate(notif.link); setMobileMenuOpen(false); }}>
-                            <span className={notif.isRead ? "text-gray-300" : "text-white font-semibold"}>{notif.title}</span>
-                          </div>
-                        ))
-                      )}
-                  </div>
+                  </AnimatePresence>
                 </div>
 
-                <div className="text-sm py-2 border-t border-blue-500 mt-2">👤 {user.name}</div>
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full text-left bg-red-500 px-3 py-2 rounded-lg hover:bg-red-600 transition shadow-sm"
-                >
-                  Logout
-                </button>
-              </>
+                {/* User Menu */}
+                 <div className="relative">
+                    <button 
+                      onClick={() => setShowUserMenu(!showUserMenu)}
+                      className="flex items-center gap-4 group"
+                    >
+                       <div className="w-11 h-11 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black text-sm uppercase shadow-xl shadow-slate-900/10 group-hover:scale-105 transition-transform overflow-hidden">
+                          {user?.profileImage ? (
+                            <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
+                          ) : (
+                            user?.name?.charAt(0) || 'U'
+                          )}
+                       </div>
+                      <div className="text-left hidden xl:block">
+                         <span className="text-xs font-black text-slate-900 block leading-none">
+                            {user?.name?.split(' ')[0] || 'User'}
+                         </span>
+                         <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mt-1">
+                            {user?.role?.replace('_', ' ') || 'Profile'}
+                         </span>
+                      </div>
+                      <ChevronDown size={14} className={`text-slate-300 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+                   </button>
+
+                   <AnimatePresence>
+                      {showUserMenu && (
+                         <motion.div 
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            className="absolute right-0 mt-4 w-64 bg-white rounded-[2rem] shadow-2xl border border-slate-100 overflow-hidden z-50 py-3"
+                         >
+                            {[
+                              { label: 'Control Center', path: getDashboardLink(), icon: LayoutDashboard },
+                              { label: 'Identity Hub', path: '/profile', icon: User }
+                            ].map((item) => (
+                               <Link 
+                                 key={item.path} 
+                                 to={item.path} 
+                                 onClick={() => setShowUserMenu(false)}
+                                 className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors"
+                               >
+                                  <item.icon size={16} className="text-slate-400" />
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">{item.label}</span>
+                               </Link>
+                            ))}
+                            <div className="h-px bg-slate-50 mx-6 my-2" />
+                            <button 
+                               onClick={handleLogout}
+                               className="w-full flex items-center gap-4 px-6 py-4 hover:bg-rose-50 transition-colors group"
+                            >
+                               <LogOut size={16} className="text-rose-400 group-hover:text-rose-600" />
+                               <span className="text-[10px] font-black uppercase tracking-widest text-rose-600">Terminate Session</span>
+                            </button>
+                         </motion.div>
+                      )}
+                   </AnimatePresence>
+                </div>
+              </div>
             ) : (
-              <>
-                <Link
-                  to="/login"
-                  className={`block py-2 px-1 transition ${
-                    isActive('/login')
-                      ? 'text-white bg-blue-700 px-3 rounded'
-                      : 'hover:text-blue-200'
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Login
+              <div className="flex items-center gap-4">
+                <Link to="/login" className="text-[10px] font-black uppercase tracking-widest text-slate-900 px-8 py-4 hover:bg-slate-50 rounded-xl transition-all">
+                  Initialize
                 </Link>
-                <Link
-                  to="/register"
-                  className="block bg-green-500 px-3 py-2 rounded hover:bg-green-600 transition text-center"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Register
+                <Link to="/register" className="btn-premium px-8 py-4 text-[10px]">
+                  Onboard Identity
                 </Link>
-              </>
+              </div>
             )}
           </div>
-        )}
+
+          {/* Mobile Menu Toggle */}
+          <button 
+             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+             className="lg:hidden w-12 h-12 bg-slate-900 text-white rounded-xl flex items-center justify-center shadow-xl shadow-slate-900/10"
+          >
+             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Drawer */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileMenuOpen(false)}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[101]"
+            />
+            <motion.div 
+              initial={{ x: '100%' }} 
+              animate={{ x: 0 }} 
+              exit={{ x: '100%' }}
+              className="fixed top-0 right-0 bottom-0 w-[300px] bg-white z-[102] shadow-2xl p-8 flex flex-col"
+            >
+              <div className="flex justify-between items-center mb-12">
+                 <span className="text-xs font-black uppercase tracking-widest text-slate-400">Navigation</span>
+                 <button onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-slate-50 rounded-lg transition-colors">
+                    <X size={20} className="text-slate-900" />
+                 </button>
+              </div>
+              
+              <div className="flex flex-col gap-4">
+                {navLinks.map((link) => (
+                  <Link 
+                    key={link.path} 
+                    to={link.path} 
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-4 p-4 rounded-xl transition-all ${
+                      isActive(link.path) ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <link.icon size={20} />
+                    <span className="text-sm font-black uppercase tracking-widest">{link.label}</span>
+                  </Link>
+                ))}
+              </div>
+
+              <div className="mt-auto pt-8 border-t border-slate-100">
+                {user ? (
+                  <div className="space-y-4">
+                     <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
+                        <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black text-xs uppercase overflow-hidden">
+                           {user?.profileImage ? (
+                             <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
+                           ) : (
+                             user?.name?.charAt(0) || 'U'
+                           )}
+                        </div>
+                        <div>
+                           <p className="text-xs font-black text-slate-900 truncate">{user?.name || 'User'}</p>
+                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{user?.role || 'Guest'}</p>
+                        </div>
+                     </div>
+                     <button onClick={handleLogout} className="w-full flex items-center gap-4 p-4 text-rose-600 font-black uppercase tracking-widest text-[10px]">
+                        <LogOut size={18} /> Sign Out
+                     </button>
+                  </div>
+                ) : (
+                  <div className="grid gap-3">
+                     <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="w-full py-4 bg-slate-50 text-slate-900 text-center rounded-xl font-black uppercase tracking-widest text-[10px]">
+                        Sign In
+                     </Link>
+                     <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="w-full py-4 bg-blue-600 text-white text-center rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-blue-600/20">
+                        Create Account
+                     </Link>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </nav>
   );
 };

@@ -3,6 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getApplicationById, acceptOffer } from '../../services/api';
 import { generateApplicationPDF } from '../../utils/pdfGenerator';
 import { getFileUrl, getDocPreviewUrl } from '../../utils/fileConfig';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  ChevronLeft, FileText, Download, User, 
+  Building2, Landmark, ShieldCheck, MapPin, 
+  Wallet, Clock, CheckCircle2, XCircle, 
+  Eye, ExternalLink, Calendar, Info
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const ApplicationDetail = () => {
   const { id } = useParams();
@@ -31,345 +39,390 @@ const ApplicationDetail = () => {
 
   const handleAcceptOffer = async (offerId) => {
     if (!window.confirm('Are you sure you want to accept this bank offer?')) return;
-    
     setAccepting(true);
     try {
       await acceptOffer(id, offerId);
-      alert('Offer accepted successfully!');
+      toast.success('Offer accepted successfully!');
       loadApplication();
     } catch (err) {
-      alert('Failed to accept offer: ' + (err.response?.data?.message || 'Unknown error'));
+      toast.error('Failed to accept offer: ' + (err.response?.data?.message || 'Unknown error'));
     } finally {
       setAccepting(false);
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusConfig = (status) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-500';
-      case 'under_review': return 'bg-blue-500';
-      case 'approved': return 'bg-green-500';
-      case 'rejected': return 'bg-red-500';
-      case 'bank_selected': return 'bg-purple-500';
-      default: return 'bg-gray-500';
+      case 'pending': return { color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100', icon: Clock, label: 'Pending' };
+      case 'under_review': return { color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', icon: Info, label: 'Under Review' };
+      case 'approved': return { color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', icon: CheckCircle2, label: 'Approved' };
+      case 'rejected': return { color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100', icon: XCircle, label: 'Rejected' };
+      case 'bank_selected': return { color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100', icon: Landmark, label: 'Bank Selected' };
+      default: return { color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-100', icon: FileText, label: status };
     }
   };
 
-
   if (loading) {
-    return <div className="text-center py-10">Loading application details...</div>;
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="flex flex-col items-center gap-6">
+           <div className="w-16 h-16 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin" />
+           <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">Retrieving Dossier</p>
+        </div>
+      </div>
+    );
   }
 
   if (error || !application) {
     return (
-      <div className="text-center py-10">
-        <p className="text-red-500">{error || 'Application not found'}</p>
-        <button
-          onClick={() => navigate('/citizen/dashboard')}
-          className="mt-4 text-blue-600 hover:underline"
-        >
-          ← Back to Dashboard
-        </button>
+      <div className="min-h-screen bg-[#fafbfc] flex items-center justify-center p-6">
+         <div className="text-center bg-white p-16 rounded-[3rem] shadow-sm border border-slate-100 max-w-md">
+            <XCircle size={64} className="text-rose-100 mx-auto mb-8" />
+            <h2 className="text-2xl font-black text-slate-900 mb-4">Record Not Found</h2>
+            <p className="text-slate-400 font-medium mb-10">{error || 'The requested application record is not available.'}</p>
+            <button onClick={() => navigate('/citizen/dashboard')} className="btn-premium w-full flex items-center justify-center gap-3">
+               <ChevronLeft size={20} /> Back to Dashboard
+            </button>
+         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <button
-          onClick={() => navigate('/citizen/dashboard')}
-          className="mb-4 text-blue-600 hover:underline"
-        >
-          ← Back to Dashboard
-        </button>
-
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          {/* Header */}
-          <div className="bg-gray-50 px-6 py-4 border-b">
-            <div className="flex justify-between items-center flex-wrap gap-4">
-              <div className="flex items-center gap-4">
-                <h1 className="text-2xl font-bold">Application #{application.applicationId}</h1>
-                <span className={`${getStatusColor(application.status)} text-white px-3 py-1 rounded-full text-sm`}>
-                  {application.status?.toUpperCase()}
-                </span>
+    <div className="min-h-screen bg-[#fafbfc] pt-32 pb-20 font-sans">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+        
+        {/* Navigation & Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-10 mb-16">
+           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+              <button 
+                 onClick={() => navigate('/citizen/dashboard')} 
+                 className="mb-8 flex items-center gap-3 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors"
+              >
+                 <ChevronLeft size={16} /> Back to Application Stream
+              </button>
+              <div className="flex items-center gap-6 mb-4">
+                 <h1 className="text-5xl lg:text-7xl font-black text-slate-900 tracking-tighter leading-none">
+                    Dossier.
+                 </h1>
+                 <div className="px-6 py-2 bg-slate-900 text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-900/10">
+                    #{application.applicationId}
+                 </div>
               </div>
+              <p className="text-xl text-slate-400 font-medium max-w-lg">
+                 Official government record for residential subsidy verification.
+              </p>
+           </motion.div>
+
+           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex gap-4">
               <button 
                 onClick={() => generateApplicationPDF(application)}
-                className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-900 transition flex items-center gap-2"
+                className="btn-premium flex items-center gap-3 group bg-white border-2 border-slate-100 text-slate-900 hover:border-blue-600 hover:text-blue-600 shadow-sm"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                Download PDF
+                <Download size={20} />
+                Extract Ledger PDF
               </button>
-            </div>
-            <p className="text-gray-600 text-sm mt-1">
-              Submitted: {new Date(application.submittedAt).toLocaleDateString()}
-            </p>
-          </div>
-
-          {/* Personal Information */}
-          <div className="px-6 py-4 border-b">
-            <h2 className="text-lg font-semibold mb-3">Personal Information</h2>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-gray-600 text-sm">Full Name</p>
-                <p className="font-medium">{application.personalInfo?.fullName || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-gray-600 text-sm">Citizenship Number</p>
-                <p className="font-medium">{application.personalInfo?.citizenshipNumber || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-gray-600 text-sm">Phone</p>
-                <p className="font-medium">{application.personalInfo?.phone || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-gray-600 text-sm">Email</p>
-                <p className="font-medium">{application.personalInfo?.email || 'N/A'}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Employment Information */}
-          <div className="px-6 py-4 border-b">
-            <h2 className="text-lg font-semibold mb-3">Employment Information</h2>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-gray-600 text-sm">Employment Type</p>
-                <p className="font-medium capitalize">{application.employment?.type || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-gray-600 text-sm">Monthly Income</p>
-                <p className="font-medium">NPR {application.employment?.monthlyIncome?.toLocaleString() || '0'}</p>
-              </div>
-              <div className="md:col-span-2">
-                <p className="text-gray-600 text-sm">Employer</p>
-                <p className="font-medium">{application.employment?.employerName || 'N/A'}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Property Information */}
-          <div className="px-6 py-4 border-b">
-            <h2 className="text-lg font-semibold mb-3">Property Information</h2>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-gray-600 text-sm">Location</p>
-                <p className="font-medium">{application.property?.district || 'N/A'}, {application.property?.municipality || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-gray-600 text-sm">Ward</p>
-                <p className="font-medium">{application.property?.ward || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-gray-600 text-sm">Property Type</p>
-                <p className="font-medium capitalize">{application.property?.type || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-gray-600 text-sm">Property Cost</p>
-                <p className="font-medium">NPR {application.property?.cost?.toLocaleString() || '0'}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Subsidy Information */}
-          <div className="px-6 py-4 border-b">
-            <h2 className="text-lg font-semibold mb-3">Subsidy Information</h2>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-gray-600 text-sm">Subsidy Requested</p>
-                <p className="font-medium">NPR {application.subsidyRequested?.toLocaleString() || '0'}</p>
-              </div>
-              <div>
-                <p className="text-gray-600 text-sm">Subsidy Approved</p>
-                <p className={`font-medium ${application.subsidyApproved > 0 ? 'text-green-600' : ''}`}>
-                  {application.subsidyApproved > 0 ? `NPR ${application.subsidyApproved.toLocaleString()}` : 'Pending'}
-                </p>
-              </div>
-              {application.officerNotes && (
-                <div className="md:col-span-2">
-                  <p className="text-gray-600 text-sm">Officer Notes</p>
-                  <p className="font-medium text-gray-700">{application.officerNotes}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Uploaded Documents Section */}
-          <div className="px-6 py-4 border-b">
-            <h2 className="text-lg font-semibold mb-3">📁 Uploaded Documents</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="border rounded-lg p-3 bg-gray-50">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl">🪪</span>
-                  <span className="font-medium text-sm">Citizenship</span>
-                </div>
-                {application.citizenshipDocument ? (
-                  <button
-                    onClick={() => {
-                      setPreviewUrl(getDocPreviewUrl(application.citizenshipDocument));
-                      setRawPreviewUrl(getFileUrl(application.citizenshipDocument));
-                    }}
-                    className="text-blue-600 hover:underline text-sm font-medium w-full text-left"
-                  >
-                    View Document 👀
-                  </button>
-                ) : (
-                  <p className="text-gray-400 text-sm">Not uploaded</p>
-                )}
-              </div>
-
-              <div className="border rounded-lg p-3 bg-gray-50">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl">💰</span>
-                  <span className="font-medium text-sm">Income Proof</span>
-                </div>
-                {application.incomeProofDocument ? (
-                  <button
-                    onClick={() => {
-                      setPreviewUrl(getDocPreviewUrl(application.incomeProofDocument));
-                      setRawPreviewUrl(getFileUrl(application.incomeProofDocument));
-                    }}
-                    className="text-blue-600 hover:underline text-sm font-medium w-full text-left"
-                  >
-                    View Document 👀
-                  </button>
-                ) : (
-                  <p className="text-gray-400 text-sm">Not uploaded</p>
-                )}
-              </div>
-
-              <div className="border rounded-lg p-3 bg-gray-50">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl">🏠</span>
-                  <span className="font-medium text-sm">Property Doc</span>
-                </div>
-                {application.propertyDocument ? (
-                  <button
-                    onClick={() => {
-                      setPreviewUrl(getDocPreviewUrl(application.propertyDocument));
-                      setRawPreviewUrl(getFileUrl(application.propertyDocument));
-                    }}
-                    className="text-blue-600 hover:underline text-sm font-medium w-full text-left"
-                  >
-                    View Document 👀
-                  </button>
-                ) : (
-                  <p className="text-gray-400 text-sm">Not uploaded</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Bank Offers */}
-          {application.bankOffers && application.bankOffers.length > 0 && (
-            <div className="px-6 py-4 border-b">
-              <h2 className="text-lg font-semibold mb-3">Bank Offers</h2>
-              <div className="space-y-3">
-                {application.bankOffers.map((offer) => (
-                  <div key={offer._id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-semibold text-lg">{offer.bankName || 'Bank Offer'}</p>
-                        <div className="grid grid-cols-2 gap-4 mt-2">
-                          <div>
-                            <p className="text-gray-600 text-sm">Loan Amount</p>
-                            <p className="font-medium">NPR {offer.loanAmount?.toLocaleString()}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600 text-sm">Interest Rate</p>
-                            <p className="font-medium">{offer.interestRate}%</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600 text-sm">Processing Fee</p>
-                            <p className="font-medium">NPR {offer.processingFee?.toLocaleString()}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600 text-sm">Tenure</p>
-                            <p className="font-medium">{offer.tenure} years</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600 text-sm">Monthly EMI</p>
-                            <p className="font-medium text-green-600">NPR {offer.emi?.toLocaleString()}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <span className={`text-sm px-2 py-1 rounded ${
-                          offer.status === 'accepted' ? 'bg-green-100 text-green-700' :
-                          offer.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                          'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {offer.status?.toUpperCase()}
-                        </span>
-                        {offer.status === 'offered' && application.status !== 'bank_selected' && (
-                          <div className="mt-2">
-                            <button
-                              onClick={() => handleAcceptOffer(offer._id)}
-                              disabled={accepting}
-                              className="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700 disabled:opacity-50"
-                            >
-                              {accepting ? 'Accepting...' : 'Accept Offer'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Footer */}
-          <div className="px-6 py-4 bg-gray-50">
-            <p className="text-gray-500 text-sm text-center">
-              Application ID: {application.applicationId} | Last Updated: {new Date(application.updatedAt).toLocaleString()}
-            </p>
-          </div>
+           </motion.div>
         </div>
+
+        <div className="grid lg:grid-cols-12 gap-12">
+           {/* Left: Application Timeline & Status */}
+           <div className="lg:col-span-8 space-y-12">
+              
+              {/* Interactive Journey Tracker */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-[3rem] p-10 md:p-16 border border-slate-100 shadow-sm relative overflow-hidden"
+              >
+                 <div className="relative z-10">
+                    <div className="flex justify-between items-center mb-16">
+                       <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-600 mb-2">Live Status Synchronization</p>
+                          <h2 className="text-4xl font-black text-slate-900 tracking-tighter">Track Your Journey.</h2>
+                       </div>
+                       <div className="text-right">
+                          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2">Protocol Reference</p>
+                          <p className="text-sm font-black text-slate-900">STAGE_{application.status.toUpperCase()}</p>
+                       </div>
+                    </div>
+
+                    {/* The Stepper */}
+                    <div className="relative pt-12 pb-24">
+                       {/* Background Path */}
+                       <div className="absolute top-[68px] left-0 w-full h-[2px] bg-slate-100" />
+                       
+                       {/* Active Path */}
+                       <div 
+                          className="absolute top-[68px] left-0 h-[2px] bg-blue-600 transition-all duration-1000" 
+                          style={{ 
+                             width: application.status === 'pending' ? '0%' :
+                                    application.status === 'under_review' ? '25%' :
+                                    application.status === 'approved' ? '50%' :
+                                    application.status === 'bank_selected' ? '75%' : '100%' 
+                          }} 
+                       />
+
+                       <div className="relative flex justify-between">
+                          {[
+                             { id: 'pending', label: 'Submission', desc: 'Entry Logged', icon: FileText },
+                             { id: 'under_review', label: 'Verification', desc: 'Officer Audit', icon: Search },
+                             { id: 'approved', label: 'Approval', desc: 'Subsidy Granted', icon: ShieldCheck },
+                             { id: 'bank_selected', label: 'Integration', desc: 'Bank Connected', icon: Landmark },
+                             { id: 'completed', label: 'Finalized', desc: 'Grant Disbursed', icon: CheckCircle2 }
+                          ].map((step, idx) => {
+                             const stages = ['pending', 'under_review', 'approved', 'bank_selected', 'completed'];
+                             const currentIdx = stages.indexOf(application.status);
+                             const stepIdx = idx;
+                             const isCompleted = stepIdx < currentIdx;
+                             const isActive = stepIdx === currentIdx;
+                             
+                             return (
+                                <div key={step.id} className="flex flex-col items-center relative z-10 w-24">
+                                   <div 
+                                      className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 border-4 ${
+                                         isCompleted ? 'bg-blue-600 border-blue-100 text-white shadow-xl shadow-blue-600/20' :
+                                         isActive ? 'bg-white border-blue-600 text-blue-600 shadow-2xl scale-125' :
+                                         'bg-white border-slate-100 text-slate-300'
+                                      }`}
+                                   >
+                                      <step.icon size={20} className={isActive ? 'animate-pulse' : ''} />
+                                   </div>
+                                   <div className="absolute top-20 text-center w-40">
+                                      <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${isActive ? 'text-blue-600' : isCompleted ? 'text-slate-900' : 'text-slate-300'}`}>
+                                         {step.label}
+                                      </p>
+                                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                                         {step.desc}
+                                      </p>
+                                   </div>
+                                </div>
+                             );
+                          })}
+                       </div>
+                    </div>
+
+                    {/* Stage Meta Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mt-12 pt-12 border-t border-slate-50">
+                       <div className="space-y-2">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Identity Status</p>
+                          <div className="flex items-center gap-3">
+                             <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                             <p className="text-sm font-black text-slate-900">{application.personalInfo?.fullName}</p>
+                          </div>
+                       </div>
+                       <div className="space-y-2">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Subsidy Valve</p>
+                          <p className={`text-sm font-black ${application.subsidyApproved > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                             {application.subsidyApproved > 0 ? `NPR ${application.subsidyApproved.toLocaleString()} UNLOCKED` : 'LOCKED / PENDING'}
+                          </p>
+                       </div>
+                       <div className="space-y-2">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">System Latency</p>
+                          <p className="text-sm font-black text-slate-900 uppercase">Operational</p>
+                       </div>
+                    </div>
+                 </div>
+                 <div className="absolute top-0 right-0 w-80 h-80 bg-blue-600/5 rounded-full blur-[100px] -mr-40 -mt-40" />
+              </motion.div>
+
+              {/* Document Repository */}
+              <div className="space-y-8">
+                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-widest ml-4">Secured Repository</h3>
+                 <div className="grid md:grid-cols-3 gap-6">
+                    {[
+                      { l: "Citizenship", n: "citizenshipDocument", i: ShieldCheck },
+                      { l: "Income Proof", n: "incomeProofDocument", i: Wallet },
+                      { l: "Property Ledger", n: "propertyDocument", i: Landmark }
+                    ].map((doc, i) => (
+                       <motion.div 
+                          key={i} 
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.2 + (i * 0.1) }}
+                          className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm group hover:shadow-xl transition-all"
+                       >
+                          <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                             <doc.i size={24} />
+                          </div>
+                          <h4 className="text-sm font-black text-slate-900 mb-4 uppercase tracking-widest">{doc.l}</h4>
+                          {application[doc.n] ? (
+                             <button 
+                                onClick={() => {
+                                   setPreviewUrl(getDocPreviewUrl(application[doc.n]));
+                                   setRawPreviewUrl(getFileUrl(application[doc.n]));
+                                }}
+                                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors"
+                             >
+                                Review File <Eye size={14} />
+                             </button>
+                          ) : (
+                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">File Missing</span>
+                          )}
+                       </motion.div>
+                    ))}
+                 </div>
+              </div>
+
+              {/* Bank Offers Section */}
+              {application.bankOffers && application.bankOffers.length > 0 && (
+                 <div className="space-y-8">
+                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-widest ml-4">Bank Integration Options</h3>
+                    <div className="grid md:grid-cols-2 gap-8">
+                       {application.bankOffers.map((offer, i) => (
+                          <motion.div 
+                             key={i}
+                             initial={{ opacity: 0, y: 20 }}
+                             animate={{ opacity: 1, y: 0 }}
+                             className={`bg-white rounded-[3rem] p-10 border shadow-sm relative overflow-hidden ${offer.status === 'accepted' ? 'border-indigo-600 ring-2 ring-indigo-600/10' : 'border-slate-100'}`}
+                          >
+                             <div className="flex justify-between items-start mb-8">
+                                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+                                   <Landmark size={28} />
+                                </div>
+                                <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl border ${
+                                   offer.status === 'accepted' ? 'bg-indigo-600 text-white border-indigo-600' :
+                                   offer.status === 'rejected' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                   'bg-amber-50 text-amber-600 border-amber-100'
+                                }`}>
+                                   {offer.status}
+                                </span>
+                             </div>
+                             
+                             <h4 className="text-2xl font-black text-slate-900 mb-6 tracking-tight">{offer.bankName}</h4>
+                             
+                             <div className="grid grid-cols-2 gap-8 mb-10">
+                                <div>
+                                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Interest Rate</p>
+                                   <p className="text-lg font-black text-slate-900">{offer.interestRate}% <span className="text-xs text-slate-300 font-medium">p.a.</span></p>
+                                </div>
+                                <div>
+                                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Monthly EMI</p>
+                                   <p className="text-lg font-black text-emerald-600">NPR {offer.emi?.toLocaleString()}</p>
+                                </div>
+                                <div>
+                                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Principal</p>
+                                   <p className="text-sm font-black text-slate-900">NPR {offer.loanAmount?.toLocaleString()}</p>
+                                </div>
+                                <div>
+                                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Tenure</p>
+                                   <p className="text-sm font-black text-slate-900">{offer.tenure} Years</p>
+                                </div>
+                             </div>
+
+                             {offer.status === 'offered' && application.status !== 'bank_selected' && (
+                                <button 
+                                   onClick={() => handleAcceptOffer(offer._id)}
+                                   disabled={accepting}
+                                   className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 transition-all disabled:opacity-50"
+                                >
+                                   {accepting ? 'Synchronizing...' : 'Authorize Integration'}
+                                </button>
+                             )}
+                          </motion.div>
+                       ))}
+                    </div>
+                 </div>
+              )}
+           </div>
+
+           {/* Right: Sidebar Meta Info */}
+           <div className="lg:col-span-4 space-y-12">
+              <div className="bg-slate-900 rounded-[3rem] p-10 text-white relative overflow-hidden">
+                 <Calendar className="text-blue-400 mb-8" size={32} />
+                 <h4 className="text-xl font-black mb-4 tracking-tight">Audit Trail</h4>
+                 <div className="space-y-6">
+                    <div className="flex gap-4">
+                       <div className="w-px bg-slate-800 relative">
+                          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-blue-400 rounded-full" />
+                       </div>
+                       <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Last Modified</p>
+                          <p className="text-xs font-bold text-slate-300">{new Date(application.updatedAt).toLocaleString()}</p>
+                       </div>
+                    </div>
+                    <div className="flex gap-4">
+                       <div className="w-px bg-slate-800 relative" />
+                       <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Officer Signature</p>
+                          <p className="text-xs font-bold text-slate-300">Verified Digitally</p>
+                       </div>
+                    </div>
+                 </div>
+                 <div className="absolute bottom-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full blur-3xl -mr-16 -mb-16" />
+              </div>
+
+              {application.officerNotes && (
+                 <div className="bg-amber-50 rounded-[3rem] p-10 border border-amber-100">
+                    <div className="flex items-center gap-4 mb-6">
+                       <Info className="text-amber-600" size={24} />
+                       <h4 className="text-xs font-black uppercase tracking-widest text-amber-900">Officer Feedback</h4>
+                    </div>
+                    <p className="text-sm font-medium text-amber-800 leading-relaxed italic">
+                       "{application.officerNotes}"
+                    </p>
+                 </div>
+              )}
+           </div>
+        </div>
+
       </div>
 
-      {/* Document Preview Modal */}
-      {previewUrl && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300">
-          <div className="bg-white rounded-xl w-full max-w-5xl h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-              <h3 className="font-semibold text-gray-800 text-lg flex items-center gap-2">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                Document Preview
-              </h3>
-              <div className="flex gap-3">
-                <a 
-                  href={rawPreviewUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="px-4 py-2 bg-blue-50 text-blue-700 font-medium rounded-lg hover:bg-blue-100 transition"
-                >
-                  Open in New Tab
-                </a>
-                <button 
-                  onClick={() => setPreviewUrl(null)} 
-                  className="px-4 py-2 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 transition"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-            <div className="flex-1 bg-gray-200">
-              <iframe 
-                src={previewUrl} 
-                className="w-full h-full border-0" 
-                title="Document Preview" 
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Premium Document Preview Modal */}
+      <AnimatePresence>
+         {previewUrl && (
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               className="fixed inset-0 bg-slate-900/90 backdrop-blur-xl flex items-center justify-center z-[100] p-6 lg:p-12"
+            >
+               <motion.div 
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  className="bg-white rounded-[3rem] w-full max-w-6xl h-full flex flex-col shadow-2xl overflow-hidden"
+               >
+                  <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-white">
+                     <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                           <Eye size={24} />
+                        </div>
+                        <div>
+                           <h3 className="font-black text-slate-900 text-xl tracking-tight uppercase">Secure Preview</h3>
+                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Read-only government document access</p>
+                        </div>
+                     </div>
+                     <div className="flex gap-4">
+                        <a 
+                           href={rawPreviewUrl} 
+                           target="_blank" 
+                           rel="noopener noreferrer" 
+                           className="px-8 py-4 bg-slate-50 text-slate-900 font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-slate-100 transition-all flex items-center gap-2"
+                        >
+                           External Access <ExternalLink size={14} />
+                        </a>
+                        <button 
+                           onClick={() => setPreviewUrl(null)} 
+                           className="px-8 py-4 bg-slate-900 text-white font-black uppercase tracking-widest text-[10px] rounded-xl shadow-xl shadow-slate-900/20"
+                        >
+                           Close Dossier
+                        </button>
+                     </div>
+                  </div>
+                  <div className="flex-1 bg-slate-100 p-1">
+                     <iframe 
+                        src={previewUrl} 
+                        className="w-full h-full border-0 rounded-[2rem]" 
+                        title="Document Preview" 
+                     />
+                  </div>
+               </motion.div>
+            </motion.div>
+         )}
+      </AnimatePresence>
     </div>
   );
 };
 
 export default ApplicationDetail;
-
-

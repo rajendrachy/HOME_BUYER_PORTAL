@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { login as loginApi, login2FA as login2FAApi, register as registerApi, getMe } from '../services/api';
+import { login as loginApi, login2FA as login2FAApi, recover2FA as recover2FAApi, register as registerApi, getMe } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -105,6 +105,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const recover2FA = async (email, recoveryCode) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const { data } = await recover2FAApi({ email, recoveryCode });
+      return data;
+    } catch (err) {
+      const message = err.response?.data?.message || 'Recovery failed';
+      setError(message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setToken(null);
@@ -112,8 +127,17 @@ export const AuthProvider = ({ children }) => {
     setError(null);
   };
 
+  const updateUser = (userData) => {
+    if (userData.token) {
+      localStorage.setItem('token', userData.token);
+      setToken(userData.token);
+    }
+    setUser((prev) => ({ ...prev, ...userData }));
+  };
+
   const value = {
     user,
+    setUser,
     token,
     loading,
     error,
@@ -121,6 +145,8 @@ export const AuthProvider = ({ children }) => {
     verifyLogin2FA,
     register,
     logout,
+    updateUser,
+    recover2FA,
     isAuthenticated: !!token && !!user
   };
 

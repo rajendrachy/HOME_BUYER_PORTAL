@@ -1,31 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getAllApplicationsWithFilters } from '../../services/api';
 import FilterBar from '../../components/FilterBar';
 import { exportApplicationsToCSV } from '../../utils/export';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Building2, FileText, Download, Search, 
+  Filter, CheckCircle2, XCircle, Clock, 
+  ArrowUpRight, Users, Landmark, TrendingUp,
+  LayoutGrid, List, ChevronLeft, ChevronRight
+} from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 
 const Dashboard = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [districts, setDistricts] = useState([]);
-  const [pagination, setPagination] = useState({
-    total: 0,
-    page: 1,
-    pages: 1,
-    limit: 10
-  });
+  const [pagination, setPagination] = useState({ total: 0, page: 1, pages: 1, limit: 10 });
   const [filters, setFilters] = useState({
-    status: 'all',
-    district: 'all',
-    startDate: '',
-    endDate: '',
-    search: '',
-    sortBy: 'date_desc',
-    limit: 10,
-    page: 1
+    status: 'all', district: 'all', startDate: '', endDate: '', search: '',
+    sortBy: 'date_desc', limit: 10, page: 1
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadApplications();
@@ -36,327 +33,263 @@ const Dashboard = () => {
     try {
       const { data } = await getAllApplicationsWithFilters(filters);
       setApplications(data.applications);
-      setPagination({
-        total: data.total,
-        page: data.page,
-        pages: data.pages,
-        limit: filters.limit
-      });
-      if (data.filters?.districts) {
-        setDistricts(data.filters.districts);
-      }
+      setPagination({ total: data.total, page: data.page, pages: data.pages, limit: filters.limit });
+      if (data.filters?.districts) setDistricts(data.filters.districts);
     } catch (err) {
-      setError('Failed to load applications');
-      console.error('Error loading applications:', err);
+      setError('Operational error: Failed to fetch secure application stream.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFilterChange = (newFilters) => {
-    setFilters({ ...newFilters, page: 1 });
-  };
-
-  const handlePageChange = (newPage) => {
-    setFilters({ ...filters, page: newPage });
-  };
+  const handleFilterChange = (newFilters) => setFilters({ ...newFilters, page: 1 });
+  const handlePageChange = (newPage) => setFilters({ ...filters, page: newPage });
 
   const handleExportCSV = () => {
-    if (applications.length === 0) {
-      alert('No data to export');
-      return;
-    }
-    exportApplicationsToCSV(applications, 'applications');
+    if (applications.length === 0) return;
+    exportApplicationsToCSV(applications, 'municipality_records');
   };
 
-  const getStatusColor = (status) => {
+  const getStatusConfig = (status) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-500';
-      case 'under_review': return 'bg-blue-500';
-      case 'approved': return 'bg-green-500';
-      case 'rejected': return 'bg-red-500';
-      case 'bank_selected': return 'bg-purple-500';
-      default: return 'bg-gray-500';
+      case 'pending': return { color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100', icon: Clock, label: 'Pending' };
+      case 'under_review': return { color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', icon: Search, label: 'Under Review' };
+      case 'approved': return { color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', icon: CheckCircle2, label: 'Approved' };
+      case 'rejected': return { color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100', icon: XCircle, label: 'Rejected' };
+      case 'bank_selected': return { color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100', icon: Landmark, label: 'Bank Integrated' };
+      default: return { color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-100', icon: FileText, label: status };
     }
   };
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'pending': return 'Pending';
-      case 'under_review': return 'Under Review';
-      case 'approved': return 'Approved';
-      case 'rejected': return 'Rejected';
-      case 'bank_selected': return 'Bank Selected';
-      default: return status || 'Unknown';
-    }
+  const stats = {
+    total: pagination.total,
+    pending: applications.filter(a => a.status === 'pending').length,
+    approved: applications.filter(a => a.status === 'approved' || a.status === 'bank_selected').length
   };
+
+  const pieData = [
+    { name: 'Queue', value: stats.pending, color: '#f59e0b' },
+    { name: 'Secured', value: stats.approved, color: '#10b981' },
+    { name: 'Other', value: Math.max(0, stats.total - stats.pending - stats.approved), color: '#6366f1' }
+  ].filter(item => item.value > 0);
 
   if (loading && applications.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-3 text-gray-600">Loading applications...</p>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="flex flex-col items-center gap-6">
+           <div className="w-16 h-16 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin" />
+           <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">Accessing Secure Records</p>
         </div>
       </div>
     );
   }
 
-  // Calculate statistics from current filtered results
-  const stats = {
-    total: pagination.total,
-    pending: applications.filter(a => a.status === 'pending').length,
-    approved: applications.filter(a => a.status === 'approved').length,
-    rejected: applications.filter(a => a.status === 'rejected').length,
-    bankSelected: applications.filter(a => a.status === 'bank_selected').length
-  };
-
-  const pieData = [
-    { name: 'Pending', value: stats.pending, color: '#eab308' },
-    { name: 'Approved', value: stats.approved, color: '#22c55e' },
-    { name: 'Rejected', value: stats.rejected, color: '#ef4444' },
-    { name: 'Bank Selected', value: stats.bankSelected, color: '#a855f7' }
-  ].filter(item => item.value > 0);
-
   return (
-    <div className="min-h-screen bg-gray-100 py-4 sm:py-8 px-3 sm:px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header with Export Button */}
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Municipality Officer Dashboard</h1>
-            <p className="text-gray-600 text-sm mt-1">Review and manage subsidy applications</p>
-          </div>
-          <button
-            onClick={handleExportCSV}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Export CSV
-          </button>
+    <div className="min-h-screen bg-[#fafbfc] pt-24 pb-20 font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden">
+      {/* Structural Accents */}
+      <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-slate-100/50 to-transparent pointer-events-none" />
+      <div className="absolute top-20 right-[-10%] w-[600px] h-[600px] bg-blue-100/20 rounded-full blur-[140px] pointer-events-none" />
+      
+      <div className="max-w-[1600px] mx-auto px-6 lg:px-12 relative z-10">
+        
+        {/* Header Section */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-10 mb-20">
+           <motion.div
+             initial={{ opacity: 0, y: 20 }}
+             animate={{ opacity: 1, y: 0 }}
+           >
+              <div className="flex items-center gap-4 mb-8">
+                 <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-2xl">
+                    <Users size={20} />
+                 </div>
+                 <div className="h-px w-10 bg-slate-200" />
+                 <span className="text-[11px] font-black uppercase tracking-[0.5em] text-slate-500">Municipality High-Command</span>
+              </div>
+              <h1 className="text-6xl lg:text-8xl font-black text-slate-900 tracking-[-0.04em] leading-[0.9] mb-6">
+                 Application <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600">Protocol.</span>
+              </h1>
+              <p className="text-xl lg:text-2xl text-slate-600 font-medium max-w-xl leading-relaxed">
+                 Operational oversight for government housing subsidies. Review, verify, and authenticate citizen eligibility.
+              </p>
+           </motion.div>
+
+           <motion.div
+             initial={{ opacity: 0, scale: 0.9 }}
+             animate={{ opacity: 1, scale: 1 }}
+             className="flex gap-6"
+           >
+              <button
+                onClick={handleExportCSV}
+                className="btn-premium px-8 py-5 flex items-center gap-3 bg-emerald-600 shadow-emerald-600/20 hover:bg-emerald-700 text-xs"
+              >
+                <Download size={20} className="group-hover:translate-y-0.5 transition-transform" />
+                Download Ledger
+              </button>
+           </motion.div>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-3 text-center">
-            <p className="text-xl sm:text-2xl font-bold text-blue-600">{stats.total}</p>
-            <p className="text-xs text-gray-500">Total</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-3 text-center">
-            <p className="text-xl sm:text-2xl font-bold text-yellow-600">{stats.pending}</p>
-            <p className="text-xs text-gray-500">Pending</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-3 text-center">
-            <p className="text-xl sm:text-2xl font-bold text-green-600">{stats.approved}</p>
-            <p className="text-xs text-gray-500">Approved</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-3 text-center">
-            <p className="text-xl sm:text-2xl font-bold text-red-600">{stats.rejected}</p>
-            <p className="text-xs text-gray-500">Rejected</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-3 text-center">
-            <p className="text-xl sm:text-2xl font-bold text-purple-600">{stats.bankSelected}</p>
-            <p className="text-xs text-gray-500">Bank Selected</p>
-          </div>
+        {/* Operational Dashboard */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-20">
+           <div className="lg:col-span-9 grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {[
+                { l: "Total Ledger", v: stats.total, i: FileText, c: "text-slate-900", bg: "bg-white", d: "Documented Protocols" },
+                { l: "Verification Queue", v: stats.pending, i: Clock, c: "text-amber-600", bg: "bg-amber-50/20", d: "Pending Authentication" },
+                { l: "Authentication Rate", v: stats.approved, i: CheckCircle2, c: "text-emerald-600", bg: "bg-emerald-50/20", d: "Verified Authorizations" }
+              ].map((stat, i) => (
+                <motion.div 
+                   key={i}
+                   initial={{ opacity: 0, y: 30 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   transition={{ delay: i * 0.1 }}
+                   className={`p-10 ${stat.bg} border border-white backdrop-blur-sm rounded-[3rem] shadow-sm group hover:shadow-2xl transition-all duration-500 border-b-4 border-b-transparent hover:border-b-slate-900`}
+                >
+                   <div className={`w-14 h-14 ${stat.c} bg-white rounded-2xl flex items-center justify-center shadow-sm mb-10 group-hover:scale-110 transition-transform`}>
+                      <stat.i size={28} />
+                   </div>
+                   <h3 className={`text-5xl font-black ${stat.c} mb-3 tracking-tighter`}>{stat.v}</h3>
+                   <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500 mb-1">{stat.l}</p>
+                   <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{stat.d}</p>
+                </motion.div>
+              ))}
+           </div>
+
+           <div className="lg:col-span-3 bg-slate-900 rounded-[3rem] p-10 flex flex-col justify-between relative overflow-hidden border border-slate-800 shadow-2xl">
+              <div className="relative z-10">
+                 <h4 className="text-white font-black text-2xl mb-2 tracking-tight">Stream Distribution</h4>
+                 <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em] mb-8">System Analytics</p>
+                 <div className="w-full h-44">
+                    <ResponsiveContainer width="100%" height="100%">
+                       <PieChart>
+                          <Pie data={pieData} innerRadius={40} outerRadius={60} paddingAngle={10} dataKey="value" stroke="none">
+                             {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                          </Pie>
+                       </PieChart>
+                    </ResponsiveContainer>
+                 </div>
+              </div>
+              <div className="absolute top-0 right-0 w-80 h-80 bg-blue-600/10 rounded-full blur-[80px] -mr-40 -mt-40" />
+           </div>
         </div>
 
-        {/* Filter Bar */}
-        <FilterBar
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          districts={districts}
-        />
+        {/* Records Filter Section */}
+        <div className="bg-white/80 backdrop-blur-xl border border-white rounded-[2.5rem] p-6 mb-16 shadow-xl shadow-slate-200/40 sticky top-28 z-40">
+           <FilterBar
+             filters={filters}
+             onFilterChange={handleFilterChange}
+             districts={districts}
+           />
+        </div>
 
-        {/* Analytics Chart */}
-        {applications.length > 0 && (
-          <div className="bg-white rounded-xl shadow-md p-4 flex flex-col items-center mb-6">
-            <h3 className="font-semibold text-gray-800 w-full text-left">Current View Statistics</h3>
-            <div className="w-full h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
+        {/* Results Stream */}
+        <div className="bg-white border border-slate-100 rounded-[3.5rem] shadow-sm overflow-hidden mb-12">
+           <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                 <thead>
+                    <tr className="bg-slate-50 border-b border-slate-100">
+                       <th className="px-12 py-10 text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">Ref. Identity</th>
+                       <th className="px-12 py-10 text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">Subject Name</th>
+                       <th className="px-12 py-10 text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">Valuation Magnitude</th>
+                       <th className="px-12 py-10 text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">Protocol Status</th>
+                       <th className="px-12 py-10 text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">Directive</th>
+                    </tr>
+                 </thead>
+                 <tbody className="divide-y divide-slate-50">
+                    <AnimatePresence mode="popLayout">
+                       {applications.map((app, i) => {
+                          const cfg = getStatusConfig(app.status);
+                          return (
+                             <motion.tr 
+                                key={app._id}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: i * 0.05 }}
+                                className="group hover:bg-slate-50/50 transition-all duration-300"
+                             >
+                                <td className="px-12 py-10">
+                                   <div className="flex flex-col">
+                                      <span className="text-xl font-black text-slate-900 tracking-tight">#{app.applicationId}</span>
+                                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-2">
+                                         <div className="w-1.5 h-1.5 rounded-full bg-slate-300" /> Secure Entry
+                                      </span>
+                                   </div>
+                                </td>
+                                <td className="px-12 py-10">
+                                   <div className="flex flex-col">
+                                      <span className="text-sm font-black text-slate-800 tracking-tight">{app.userId?.name}</span>
+                                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{app.userId?.email}</span>
+                                   </div>
+                                </td>
+                                <td className="px-12 py-10">
+                                   <div className="flex items-baseline gap-1">
+                                      <span className="text-[10px] font-black text-slate-400">NPR</span>
+                                      <span className="text-lg font-black text-slate-900 tracking-tighter">
+                                         {app.property?.cost?.toLocaleString()}
+                                      </span>
+                                   </div>
+                                </td>
+                                <td className="px-12 py-10">
+                                   <div className={`inline-flex items-center gap-3 px-6 py-3 ${cfg.bg} ${cfg.color} rounded-2xl border ${cfg.border} text-[10px] font-black uppercase tracking-[0.2em] shadow-sm`}>
+                                      <cfg.icon size={14} className="animate-pulse" />
+                                      {cfg.label}
+                                   </div>
+                                </td>
+                                <td className="px-12 py-10">
+                                   <button 
+                                      onClick={() => navigate(`/officer/application/${app._id}`)}
+                                      className="flex items-center gap-3 px-6 py-4 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.3em] hover:bg-blue-600 transition-all duration-300 shadow-xl shadow-slate-900/10 hover:shadow-blue-600/20"
+                                   >
+                                      Verify File <ArrowUpRight size={16} />
+                                   </button>
+                                </td>
+                             </motion.tr>
+                          );
+                       })}
+                    </AnimatePresence>
+                 </tbody>
+              </table>
+           </div>
+
+           {/* Pagination Dashboard */}
+           {pagination.pages > 1 && (
+              <div className="px-12 py-10 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+                 <div className="flex items-center gap-4">
+                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-ping" />
+                    <p className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">
+                       Protocol Page {pagination.page} of {pagination.pages}
+                    </p>
+                 </div>
+                 <div className="flex gap-4">
+                    <button 
+                       onClick={() => handlePageChange(pagination.page - 1)}
+                       disabled={pagination.page === 1}
+                       className="w-14 h-14 bg-white rounded-2xl border border-slate-200 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-600 shadow-sm disabled:opacity-30 transition-all"
+                    >
+                       <ChevronLeft size={24} />
+                    </button>
+                    <button 
+                       onClick={() => handlePageChange(pagination.page + 1)}
+                       disabled={pagination.page === pagination.pages}
+                       className="w-14 h-14 bg-white rounded-2xl border border-slate-200 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-600 shadow-sm disabled:opacity-30 transition-all"
+                    >
+                       <ChevronRight size={24} />
+                    </button>
+                 </div>
+              </div>
+           )}
+        </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-            {error}
-          </div>
+           <motion.div 
+             initial={{ opacity: 0, y: 10 }}
+             animate={{ opacity: 1, y: 0 }}
+             className="fixed bottom-10 right-10 bg-slate-900 text-white px-10 py-5 rounded-[2rem] shadow-2xl font-black uppercase tracking-widest text-[10px] flex items-center gap-5 z-50 border border-slate-800"
+           >
+              <div className="w-8 h-8 bg-rose-600 rounded-lg flex items-center justify-center">
+                 <XCircle size={18} />
+              </div>
+              {error}
+           </motion.div>
         )}
-
-        {/* Results Count */}
-        <div className="mb-4 flex justify-between items-center">
-          <p className="text-sm text-gray-600">
-            Showing <span className="font-medium">{applications.length}</span> of{' '}
-            <span className="font-medium">{pagination.total}</span> applications
-          </p>
-        </div>
-
-        {/* Mobile Card View */}
-        <div className="block sm:hidden space-y-3">
-          {applications.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <div className="text-5xl mb-4">📋</div>
-              <p className="text-gray-500">No applications found</p>
-              <button
-                onClick={() => handleFilterChange({
-                  status: 'all',
-                  district: 'all',
-                  startDate: '',
-                  endDate: '',
-                  search: '',
-                  sortBy: 'date_desc',
-                  limit: 10,
-                  page: 1
-                })}
-                className="mt-4 text-blue-600 hover:underline"
-              >
-                Clear Filters
-              </button>
-            </div>
-          ) : (
-            applications.map((app) => (
-              <div key={app._id} className="bg-white rounded-lg shadow p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">{app.applicationId}</p>
-                    <p className="text-sm text-gray-600">{app.userId?.name}</p>
-                  </div>
-                  <span className={`${getStatusColor(app.status)} text-white px-2 py-1 rounded-full text-xs font-medium`}>
-                    {getStatusText(app.status)}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-                  <div>
-                    <p className="text-gray-500 text-xs">Property Cost</p>
-                    <p className="font-medium text-sm">NPR {app.property?.cost?.toLocaleString()}</p>
-                  </div>
-                  {app.subsidyApproved > 0 && (
-                    <div>
-                      <p className="text-gray-500 text-xs">Subsidy</p>
-                      <p className="font-medium text-sm text-green-600">NPR {app.subsidyApproved?.toLocaleString()}</p>
-                    </div>
-                  )}
-                </div>
-                <Link
-                  to={`/officer/application/${app._id}`}
-                  className="block w-full text-center bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
-                >
-                  Review Application →
-                </Link>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Desktop Table View */}
-        <div className="hidden sm:block bg-white rounded-xl shadow-lg overflow-hidden">
-          {applications.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-5xl mb-4">📋</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Applications Found</h3>
-              <p className="text-gray-500">Try adjusting your filters or search.</p>
-              <button
-                onClick={() => handleFilterChange({
-                  status: 'all',
-                  district: 'all',
-                  startDate: '',
-                  endDate: '',
-                  search: '',
-                  sortBy: 'date_desc',
-                  limit: 10,
-                  page: 1
-                })}
-                className="mt-4 text-blue-600 hover:underline"
-              >
-                Clear All Filters
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applicant</th>
-                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property Cost</th>
-                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {applications.map((app) => (
-                      <tr key={app._id} className="hover:bg-gray-50">
-                        <td className="px-4 sm:px-6 py-4 text-sm font-medium text-gray-900">{app.applicationId}</td>
-                        <td className="px-4 sm:px-6 py-4">
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{app.userId?.name}</p>
-                            <p className="text-xs text-gray-500">{app.userId?.email}</p>
-                          </div>
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 text-sm text-gray-900">NPR {app.property?.cost?.toLocaleString()}</td>
-                        <td className="px-4 sm:px-6 py-4">
-                          <span className={`${getStatusColor(app.status)} text-white px-2 py-1 rounded-full text-xs font-medium`}>
-                            {getStatusText(app.status)}
-                          </span>
-                        </td>
-                        <td className="px-4 sm:px-6 py-4">
-                          <Link
-                            to={`/officer/application/${app._id}`}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                          >
-                            Review →
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination */}
-              {pagination.pages > 1 && (
-                <div className="flex justify-center items-center gap-2 py-4 border-t">
-                  <button
-                    onClick={() => handlePageChange(pagination.page - 1)}
-                    disabled={pagination.page === 1}
-                    className="px-3 py-1 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                  >
-                    Previous
-                  </button>
-                  <span className="px-3 py-1 text-sm">
-                    Page {pagination.page} of {pagination.pages}
-                  </span>
-                  <button
-                    onClick={() => handlePageChange(pagination.page + 1)}
-                    disabled={pagination.page === pagination.pages}
-                    className="px-3 py-1 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
       </div>
     </div>
   );

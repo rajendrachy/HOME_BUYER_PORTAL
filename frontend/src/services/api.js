@@ -37,12 +37,17 @@ api.interceptors.response.use(
 export const register = (userData) => api.post('/auth/register', userData);
 export const login = (credentials) => api.post('/auth/login', credentials);
 export const login2FA = (data) => api.post('/auth/2fa/login', data);
+export const recover2FA = (data) => api.post('/auth/2fa/recover', data);
 export const getMe = () => api.get('/auth/me');
+export const updateProfile = (data) => api.put('/auth/profile', data);
 
 // 🔐 2FA Setup
 export const setup2FA = () => api.post('/auth/2fa/setup');
 export const verify2FA = (token) => api.post('/auth/2fa/verify', { token });
 export const disable2FA = () => api.post('/auth/2fa/disable');
+export const uploadProfileImage = (formData) => api.post('/auth/profile-image', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' }
+});
 
 // ============= ADMIN APIs (User Management) =============
 export const adminGetAllUsers = (filters = {}) => {
