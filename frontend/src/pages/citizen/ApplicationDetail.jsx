@@ -8,7 +8,7 @@ import {
   ChevronLeft, FileText, Download, User, 
   Building2, Landmark, ShieldCheck, MapPin, 
   Wallet, Clock, CheckCircle2, XCircle, 
-  Eye, ExternalLink, Calendar, Info
+  Eye, ExternalLink, Calendar, Info, Search
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 

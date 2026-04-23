@@ -151,6 +151,20 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('WARNING: Irreversible Operation. Proceed to purge identity and associated data?')) return;
+    setUserActionLoading(userId);
+    try {
+      await api.adminDeleteUser(userId);
+      toast.success('Identity profile successfully purged from mainframe.');
+      loadUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Identity purge rejected by system constraint.');
+    } finally {
+      setUserActionLoading(null);
+    }
+  };
+
   const stats = useMemo(() => {
     const s = { pending: 0, under_review: 0, approved: 0, bank_selected: 0, completed: 0, rejected: 0 };
     applications.forEach(app => { if (s[app.status] !== undefined) s[app.status]++; });
@@ -370,12 +384,20 @@ const AdminDashboard = () => {
                                    <div><p className="text-sm font-black text-slate-900">{u.name}</p><p className="text-[10px] font-bold text-slate-400">{u.email}</p></div>
                                 </td>
                                 <td className="px-10 py-8"><span className="px-3 py-1 bg-slate-50 rounded-lg text-[9px] font-black uppercase">{u.role}</span></td>
-                                <td className="px-10 py-8 text-right">
+                                <td className="px-10 py-8 text-right flex justify-end gap-3">
                                    <button 
                                       onClick={() => { setEditingUser({ ...u }); setIsEditModalOpen(true); }}
                                       className="px-6 py-3 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-slate-900 transition-all"
                                    >
-                                      Configure Identity
+                                      Configure
+                                   </button>
+                                   <button 
+                                      onClick={() => handleDeleteUser(u._id)}
+                                      disabled={userActionLoading === u._id}
+                                      className="p-3 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center disabled:opacity-50"
+                                      title="Purge Identity"
+                                   >
+                                      {userActionLoading === u._id ? <div className="w-4 h-4 border-2 border-rose-200 border-t-rose-600 rounded-full animate-spin" /> : <Trash2 size={16} />}
                                    </button>
                                 </td>
                              </tr>

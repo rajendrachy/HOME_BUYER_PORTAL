@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Bank = require('../models/Bank');  // ✅ Add this import
+const Application = require('../models/Application');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const { generateSecret, generateQRCode, verifyToken } = require('../utils/twoFactor');
@@ -448,6 +449,11 @@ const adminDeleteUser = async (req, res) => {
     // Prevent admin from deleting themselves
     if (user._id.toString() === req.user._id.toString()) {
       return res.status(400).json({ message: 'Administrators cannot delete themselves' });
+    }
+
+    // Delete associated applications if citizen
+    if (user.role === 'citizen') {
+      await Application.deleteMany({ applicant: user._id });
     }
 
     await User.findByIdAndDelete(req.params.id);

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { submitApplication } from '../../services/api';
+import { submitApplication, getAllMunicipalities } from '../../services/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -35,6 +35,20 @@ const SubmitApplication = () => {
     propertyDocument: null
   });
 
+  const [municipalities, setMunicipalities] = useState([]);
+
+  useEffect(() => {
+    const fetchMuni = async () => {
+      try {
+        const { data } = await getAllMunicipalities();
+        setMunicipalities(data.municipalities || []);
+      } catch (err) {
+        console.error('Failed to fetch municipalities');
+      }
+    };
+    fetchMuni();
+  }, []);
+
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
   const handleFileChange = (e) => setFiles({ ...files, [e.target.name]: e.target.files[0] });
 
@@ -46,8 +60,8 @@ const SubmitApplication = () => {
         return false;
       }
     } else if (currentStep === 2) {
-      if (!formData.district || !formData.propertyCost || parseInt(formData.propertyCost) < 100000) {
-        setError('Please provide valid property and income details.');
+      if (!formData.district || !formData.municipality || !formData.propertyCost || parseInt(formData.propertyCost) < 100000) {
+        setError('Please provide valid property and income details, including your municipality.');
         return false;
       }
     }
@@ -148,6 +162,29 @@ const SubmitApplication = () => {
         <div className="space-y-2">
            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Target District</label>
            <input type="text" name="district" value={formData.district} onChange={handleChange} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all font-bold text-slate-900" placeholder="Kathmandu" />
+        </div>
+        <div className="space-y-2">
+           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Municipality</label>
+           <select name="municipality" value={formData.municipality} onChange={handleChange} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all font-bold text-slate-900 appearance-none">
+             <option value="">Select Municipality</option>
+             {municipalities.map(m => <option key={m._id} value={m.name}>{m.name}</option>)}
+           </select>
+        </div>
+        <div className="space-y-2">
+           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Ward Number</label>
+           <input type="number" name="ward" value={formData.ward} onChange={handleChange} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all font-bold text-slate-900" placeholder="10" />
+        </div>
+        <div className="space-y-2">
+           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Tole (Street/Area)</label>
+           <input type="text" name="tole" value={formData.tole} onChange={handleChange} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all font-bold text-slate-900" placeholder="Baneshwor" />
+        </div>
+        <div className="space-y-2">
+           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Property Type</label>
+           <select name="propertyType" value={formData.propertyType} onChange={handleChange} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all font-bold text-slate-900 appearance-none">
+             <option value="house">House</option>
+             <option value="land">Land</option>
+             <option value="apartment">Apartment</option>
+           </select>
         </div>
         <div className="space-y-2">
            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Estimated Property Cost (NPR)</label>
