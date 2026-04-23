@@ -5,18 +5,11 @@ import * as api from '../../services/api';
 import { adminGetAllUsers, adminUpdateUser, adminDeleteUser } from '../../services/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ShieldCheck, Users, FileText, Map as MapIcon, 
-  LayoutDashboard, Activity, Search, Filter, 
-  Trash2, UserX, UserCheck, ChevronRight, 
-  TrendingUp, Globe, Database, Settings, X, Building2
-} from 'lucide-react';
-import { 
-  PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid
-} from 'recharts';
+import { ShieldCheck, Database, Activity, Users, FileText, Globe, Settings, TrendingUp, X, MapPin, Building2, Trash2 } from 'lucide-react';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import NotificationPanel from '../../components/NotificationPanel';
 import L from 'leaflet';
 
 // Leaflet Icon Fix
@@ -274,7 +267,7 @@ const AdminDashboard = () => {
                  </div>
 
                  {/* Visualization Layer */}
-                 <div className="grid lg:grid-cols-2 gap-12">
+                 <div className="grid lg:grid-cols-3 gap-8">
                     <div className="bg-white p-12 rounded-[3.5rem] border border-slate-100 shadow-sm h-[500px] flex flex-col">
                        <h3 className="text-xl font-black text-slate-900 mb-10 uppercase tracking-widest">National Status Distribution</h3>
                        <div className="flex-1">
@@ -298,13 +291,15 @@ const AdminDashboard = () => {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis dataKey="name" fontSize={10} fontStyle="bold" tickLine={false} axisLine={false} />
                                 <YAxis fontSize={10} fontStyle="bold" tickLine={false} axisLine={false} />
-                                <Tooltip cursor={{fill: '#f8fafc'}} />
-                                <Bar dataKey="value" radius={[12, 12, 0, 0]}>
-                                   {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                                </Bar>
+                                <Tooltip cursor={{ fill: '#f8fafc' }} />
+                                <Bar dataKey="value" fill="#0f172a" radius={[10, 10, 0, 0]} />
                              </BarChart>
                           </ResponsiveContainer>
                        </div>
+                    </div>
+
+                    <div className="h-[500px]">
+                       <NotificationPanel />
                     </div>
                  </div>
               </motion.div>

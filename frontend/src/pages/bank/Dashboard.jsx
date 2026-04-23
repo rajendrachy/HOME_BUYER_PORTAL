@@ -12,6 +12,7 @@ import {
   LandPlot, PieChart as PieChartIcon, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import NotificationPanel from '../../components/NotificationPanel';
 
 const Dashboard = () => {
   const [applications, setApplications] = useState([]);
@@ -176,21 +177,8 @@ const Dashboard = () => {
               ))}
            </div>
 
-           <div className="lg:col-span-3 bg-slate-900 rounded-[3rem] p-10 flex flex-col justify-between relative overflow-hidden border border-slate-800 shadow-2xl">
-              <div className="relative z-10">
-                 <h4 className="text-white font-black text-2xl mb-2 tracking-tight">Market Share</h4>
-                 <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em] mb-8">Asset Liquidity</p>
-                 <div className="w-full h-44">
-                    <ResponsiveContainer width="100%" height="100%">
-                       <PieChart>
-                          <Pie data={pieData} innerRadius={40} outerRadius={60} paddingAngle={10} dataKey="value" stroke="none">
-                             {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                          </Pie>
-                       </PieChart>
-                    </ResponsiveContainer>
-                 </div>
-              </div>
-              <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-600/10 rounded-full blur-[80px] -mr-40 -mt-40" />
+           <div className="lg:col-span-3">
+              <NotificationPanel />
            </div>
         </div>
 

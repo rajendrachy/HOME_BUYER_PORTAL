@@ -9,6 +9,7 @@ import {
   TrendingUp, Wallet
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import NotificationPanel from '../../components/NotificationPanel';
 
 const Dashboard = () => {
   const [applications, setApplications] = useState([]);
@@ -157,37 +158,9 @@ const Dashboard = () => {
               ))}
            </div>
 
-           {/* Visualization Mini-Card */}
-           <div className="lg:col-span-4 bg-slate-900 rounded-[3rem] p-10 relative overflow-hidden flex items-center justify-between border border-slate-800 shadow-2xl">
-              <div className="relative z-10">
-                 <h4 className="text-white font-black text-3xl mb-3 tracking-tight">Analytics</h4>
-                 <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mb-8">Status Distribution</p>
-                 <div className="space-y-4">
-                    {pieData.map((d, i) => (
-                       <div key={i} className="flex items-center gap-3 bg-white/5 py-2 px-4 rounded-xl border border-white/5">
-                          <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.2)]" style={{ backgroundColor: d.color }} />
-                          <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{d.name}</span>
-                          <span className="text-white text-xs font-black ml-auto">{d.value}</span>
-                       </div>
-                    ))}
-                 </div>
-              </div>
-              <div className="w-44 h-44 relative z-10">
-                 <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                       <Pie data={pieData} innerRadius={40} outerRadius={60} paddingAngle={10} dataKey="value" stroke="none">
-                          {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                       </Pie>
-                    </PieChart>
-                 </ResponsiveContainer>
-                 <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                       <p className="text-white text-xl font-black leading-none">{stats.total}</p>
-                       <p className="text-slate-500 text-[8px] font-black uppercase tracking-widest mt-1">Total</p>
-                    </div>
-                 </div>
-              </div>
-              <div className="absolute top-0 right-0 w-80 h-80 bg-blue-600/10 rounded-full blur-[80px] -mr-40 -mt-40" />
+           {/* Notification Panel */}
+           <div className="lg:col-span-4">
+              <NotificationPanel />
            </div>
         </div>
 
