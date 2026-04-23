@@ -95,5 +95,9 @@ export const getApprovedApplications = () => api.get('/applications/approved');
 export const submitLoanOffer = (id, data) => api.post(`/applications/${id}/offer`, data);
 export const getMyBankOffers = () => api.get('/applications/bank/offers');
 
+// ============= INSTITUTIONAL APIs =============
+export const getAllBanks = () => api.get('/banks');
+export const getAllMunicipalities = () => api.get('/municipalities');
+
 export default api;
 

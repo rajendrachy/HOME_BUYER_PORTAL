@@ -300,10 +300,10 @@ const Login = () => {
                </div>
                <div className="grid grid-cols-2 gap-5 mt-10">
                   {[
-                    { r: "Citizen", e: "hari@gmail.com", p: "password123" },
-                    { r: "Municipal", e: "officer@kmc.gov.np", p: "password123" },
-                    { r: "Bank Unit", e: "manager@nimb.com.np", p: "password123" },
-                    { r: "Command", e: "admin@portal.gov.np", p: "password123" }
+                    { r: "Citizen Node", e: "hari@gmail.com", p: "password123" },
+                    { r: "State Unit", e: "officer@kmc.gov.np", p: "password123" },
+                    { r: "Fiscal Unit", e: "manager@nimb.com.np", p: "password123" },
+                    { r: "Sovereign Command", e: "admin@portal.gov.np", p: "password123" }
                   ].map((cred, i) => (
                     <div key={i} className="p-5 bg-white rounded-[2rem] border border-slate-100 shadow-sm group hover:border-blue-500/30 transition-all duration-500">
                        <p className="font-black text-blue-600 uppercase tracking-widest text-[9px] mb-2">{cred.r}</p>

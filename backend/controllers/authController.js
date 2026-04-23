@@ -408,8 +408,12 @@ const adminUpdateUser = async (req, res) => {
 
     // Update fields
     if (req.body.name) user.name = req.body.name;
+    if (req.body.email) user.email = req.body.email;
     if (req.body.role) user.role = req.body.role;
     if (req.body.isActive !== undefined) user.isActive = req.body.isActive;
+    if (req.body.bankName !== undefined) user.bankName = req.body.bankName;
+    if (req.body.bankId !== undefined) user.bankId = req.body.bankId;
+    if (req.body.municipalityId !== undefined) user.municipalityId = req.body.municipalityId;
     
     const updatedUser = await user.save();
 

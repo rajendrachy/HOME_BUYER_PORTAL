@@ -121,6 +121,7 @@ app.use('/api/uploads', express.static(path.join(__dirname, 'uploads'), {
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/applications', require('./routes/applicationRoutes'));
 app.use('/api/banks', require('./routes/bankRoutes'));
+app.use('/api/municipalities', require('./routes/municipalityRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 // ========== TEST ROUTES ==========
