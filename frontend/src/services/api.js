@@ -61,6 +61,7 @@ export const adminGetAllUsers = (filters = {}) => {
 
 export const adminUpdateUser = (id, data) => api.put(`/auth/users/${id}`, data);
 export const adminDeleteUser = (id) => api.delete(`/auth/users/${id}`);
+export const adminUpdateApplication = (id, data) => api.put(`/applications/admin/${id}`, data);
 
 // ============= APPLICATION APIs (Citizen) =============
 export const submitApplication = (data) => api.post('/applications', data);

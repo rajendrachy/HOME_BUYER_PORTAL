@@ -661,6 +661,46 @@ const acceptOffer = async (req, res) => {
   }
 };
 
+// ============= SUPER ADMIN EXCLUSIVE ENDPOINTS =============
+
+// @desc    Admin: Update ANY application field (Absolute Control)
+// @route   PUT /api/applications/admin/:id
+// @access  Private (Admin Only)
+const adminUpdateApplication = async (req, res) => {
+  try {
+    const application = await Application.findById(req.params.id);
+    
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    // Merge incoming data into application object
+    // This allows updating nested fields like personalInfo, property, etc.
+    const updates = req.body;
+    
+    Object.keys(updates).forEach(key => {
+      if (typeof updates[key] === 'object' && updates[key] !== null && !Array.isArray(updates[key])) {
+        application[key] = { ...application[key], ...updates[key] };
+      } else {
+        application[key] = updates[key];
+      }
+    });
+
+    await application.save();
+
+    console.log(`🛡️ Admin Override: Application #${application.applicationId} updated by Super Admin.`);
+
+    res.json({
+      success: true,
+      message: 'Application dossier updated by Admin Override.',
+      application
+    });
+  } catch (error) {
+    console.error('Admin update error:', error);
+    res.status(500).json({ message: 'Server error during administrative override', error: error.message });
+  }
+};
+
 module.exports = {
   submitApplication,
   getMyApplications,
@@ -672,6 +712,7 @@ module.exports = {
   getMyBankOffers,
   getApprovedApplications,
   getMyOffers,
-  acceptOffer
+  acceptOffer,
+  adminUpdateApplication
 };
 

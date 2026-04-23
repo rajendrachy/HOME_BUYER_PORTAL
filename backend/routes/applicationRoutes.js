@@ -13,7 +13,8 @@ const {
   getMyBankOffers,
   getApprovedApplications,
   getMyOffers,        // ✅ NEW: Get all offers submitted by this bank
-  acceptOffer
+  acceptOffer,
+  adminUpdateApplication
 } = require('../controllers/applicationController');
 
 // ============= PUBLIC ROUTES =============
@@ -47,6 +48,9 @@ router.post('/:id/offer', protect, authorize('bank_officer', 'admin'), submitLoa
 router.get('/:id', protect, getApplicationById);
 // Update application status (officer only)
 router.put('/:id/status', protect, authorize('municipality_officer', 'admin'), updateStatus);
+
+// Admin absolute control
+router.put('/admin/:id', protect, authorize('admin'), adminUpdateApplication);
 
 module.exports = router;
 
