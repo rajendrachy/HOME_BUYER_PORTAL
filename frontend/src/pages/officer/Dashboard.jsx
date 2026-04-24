@@ -176,7 +176,7 @@ const Dashboard = () => {
                     <tr className="bg-slate-50 border-b border-slate-100">
                        <th className="px-12 py-10 text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">Ref. Identity</th>
                        <th className="px-12 py-10 text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">Subject Name</th>
-                       <th className="px-12 py-10 text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">Valuation Magnitude</th>
+                       <th className="px-12 py-10 text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">Submitted At</th>
                        <th className="px-12 py-10 text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">Protocol Status</th>
                        <th className="px-12 py-10 text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">Directive</th>
                     </tr>
@@ -208,10 +208,12 @@ const Dashboard = () => {
                                    </div>
                                 </td>
                                 <td className="px-12 py-10">
-                                   <div className="flex items-baseline gap-1">
-                                      <span className="text-[10px] font-black text-slate-400">NPR</span>
-                                      <span className="text-lg font-black text-slate-900 tracking-tighter">
-                                         {app.property?.cost?.toLocaleString()}
+                                   <div className="flex flex-col">
+                                      <span className="text-sm font-black text-slate-900 tracking-tight">
+                                         {new Date(app.createdAt).toLocaleDateString()}
+                                      </span>
+                                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                                         {new Date(app.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                       </span>
                                    </div>
                                 </td>

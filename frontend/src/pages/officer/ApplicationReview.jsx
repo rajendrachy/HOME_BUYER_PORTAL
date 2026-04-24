@@ -96,8 +96,22 @@ const ApplicationReview = () => {
                  <h1 className="text-5xl lg:text-7xl font-black text-slate-900 tracking-tighter leading-none">
                     Review File.
                  </h1>
-                 <div className="px-6 py-2 bg-slate-900 text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em]">
-                    #{application.applicationId}
+                 <div className="flex flex-col gap-3">
+                    <div className="px-6 py-2 bg-slate-900 text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] w-fit shadow-xl shadow-slate-900/10">
+                       #{application.applicationId}
+                    </div>
+                    <div className="flex gap-6 ml-1">
+                       <div className="flex flex-col">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Received On</span>
+                          <span className="text-[11px] font-black text-slate-900">{new Date(application.createdAt).toLocaleDateString()}</span>
+                       </div>
+                       {application.approvedAt && (
+                          <div className="flex flex-col border-l border-slate-100 pl-6">
+                             <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Authorized On</span>
+                             <span className="text-[11px] font-black text-emerald-600">{new Date(application.approvedAt).toLocaleDateString()}</span>
+                          </div>
+                       )}
+                    </div>
                  </div>
               </div>
               <p className="text-xl text-slate-400 font-medium max-w-lg">

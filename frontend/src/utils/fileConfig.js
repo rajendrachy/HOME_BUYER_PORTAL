@@ -32,16 +32,6 @@ export const getDocPreviewUrl = (path) => {
   const url = getFileUrl(path);
   if (!url) return null;
 
-  // Detect if it's a PDF:
-  // 1. URL ends with .pdf
-  // 2. Cloudinary raw upload (always a document, usually PDF)
-  const isPdf = url.toLowerCase().endsWith('.pdf') || url.includes('/raw/upload/');
-  const isRemote = url.startsWith('http') && !url.includes('localhost') && !url.includes('127.0.0.1');
-
-  // For remote PDFs (Cloudinary), use Google Docs Viewer to prevent forced download
-  if (isPdf && isRemote) {
-    return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-  }
-
+  // Returning direct URL for all PDFs. Browser native viewer is generally more reliable than Google Docs Viewer for remote/Cloudinary files.
   return url;
 };
