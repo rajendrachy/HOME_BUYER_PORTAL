@@ -14,7 +14,13 @@ export const getFileUrl = (path) => {
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   
   // Ensure we add the /api prefix for local storage files
-  const normalizedPath = path.startsWith('/uploads') ? `/api${path}` : path;
+  let normalizedPath = path.startsWith('/uploads') ? `/api${path}` : path;
+  
+  // Ensure path starts with a slash
+  if (!normalizedPath.startsWith('/')) {
+    normalizedPath = `/${normalizedPath}`;
+  }
+  
   return `${apiUrl}${normalizedPath}`;
 };
 

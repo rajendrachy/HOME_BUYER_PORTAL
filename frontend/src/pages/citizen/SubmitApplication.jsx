@@ -7,7 +7,8 @@ import {
   User, Building2, Wallet, FileUp, 
   ChevronRight, ChevronLeft, CheckCircle2, 
   ShieldCheck, AlertCircle, Sparkles, Home,
-  Phone, Mail, MapPin, Landmark
+  Phone, Mail, MapPin, Landmark,
+  Eye, X
 } from 'lucide-react';
 
 const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -35,6 +36,14 @@ const SubmitApplication = () => {
     propertyDocument: null
   });
 
+  const [previewUrls, setPreviewUrls] = useState({
+    citizenshipDocument: null,
+    incomeProofDocument: null,
+    propertyDocument: null
+  });
+
+  const [activePreview, setActivePreview] = useState(null);
+
   const [municipalities, setMunicipalities] = useState([]);
 
   useEffect(() => {
@@ -49,8 +58,32 @@ const SubmitApplication = () => {
     fetchMuni();
   }, []);
 
+  // Cleanup preview URLs
+  useEffect(() => {
+    return () => {
+      Object.values(previewUrls).forEach(url => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    };
+  }, []);
+
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-  const handleFileChange = (e) => setFiles({ ...files, [e.target.name]: e.target.files[0] });
+  
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    const name = e.target.name;
+    
+    if (file) {
+      setFiles(prev => ({ ...prev, [name]: file }));
+      
+      // Revoke old URL if exists
+      if (previewUrls[name]) URL.revokeObjectURL(previewUrls[name]);
+      
+      // Create new URL
+      const url = URL.createObjectURL(file);
+      setPreviewUrls(prev => ({ ...prev, [name]: url }));
+    }
+  };
 
   const validateStep = (currentStep) => {
     setError('');
@@ -249,6 +282,23 @@ const SubmitApplication = () => {
                        </p>
                     </div>
                  </div>
+                 {files[file.name] && (
+                    <button 
+                       type="button"
+                       onClick={(e) => {
+                          e.stopPropagation();
+                          setActivePreview({
+                             url: previewUrls[file.name],
+                             name: files[file.name].name,
+                             type: files[file.name].type
+                          });
+                       }}
+                       className="p-4 bg-white border border-slate-100 text-blue-600 rounded-2xl shadow-sm hover:border-blue-600 transition-all flex items-center gap-2 group/btn"
+                    >
+                       <Eye size={20} className="group-hover/btn:scale-110 transition-transform" />
+                       <span className="text-[10px] font-black uppercase tracking-widest">Preview</span>
+                    </button>
+                 )}
                  {!files[file.name] && <FileUp className="text-slate-200 group-hover:text-blue-600 transition-colors" size={32} />}
               </div>
            </div>
@@ -340,6 +390,67 @@ const SubmitApplication = () => {
         </div>
 
       </div>
+
+      {/* Live Preview Modal */}
+      <AnimatePresence>
+         {activePreview && (
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               className="fixed inset-0 bg-slate-900/90 backdrop-blur-xl flex items-center justify-center z-[200] p-6 lg:p-12"
+            >
+               <motion.div 
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  className="bg-white rounded-[3rem] w-full max-w-6xl h-full flex flex-col shadow-2xl overflow-hidden"
+               >
+                  <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white">
+                     <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                           <Eye size={20} />
+                        </div>
+                        <div>
+                           <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">{activePreview.name}</h3>
+                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Local Identity Preview</p>
+                        </div>
+                     </div>
+                     <button 
+                        onClick={() => setActivePreview(null)} 
+                        className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center shadow-xl shadow-slate-900/20 hover:scale-110 transition-transform"
+                     >
+                        <X size={20} />
+                     </button>
+                  </div>
+                  <div className="flex-1 bg-slate-100 p-2 overflow-hidden relative">
+                     {activePreview.type === 'application/pdf' ? (
+                        <iframe 
+                           src={activePreview.url} 
+                           className="w-full h-full border-0 rounded-[2rem]" 
+                           title="PDF Preview" 
+                        />
+                     ) : activePreview.type.startsWith('image/') ? (
+                        <div className="w-full h-full flex items-center justify-center p-8">
+                           <img 
+                              src={activePreview.url} 
+                              alt="Preview" 
+                              className="max-w-full max-h-full object-contain rounded-2xl shadow-lg" 
+                           />
+                        </div>
+                     ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                           <div className="text-center">
+                              <FileText size={64} className="text-slate-200 mx-auto mb-4" />
+                              <p className="text-slate-400 font-bold">Preview not supported for this file type</p>
+                           </div>
+                        </div>
+                     )}
+                  </div>
+               </motion.div>
+            </motion.div>
+         )}
+      </AnimatePresence>
     </div>
   );
 };

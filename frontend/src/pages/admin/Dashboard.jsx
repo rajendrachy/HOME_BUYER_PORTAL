@@ -5,7 +5,7 @@ import * as api from '../../services/api';
 import { adminGetAllUsers, adminUpdateUser, adminDeleteUser } from '../../services/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, Database, Activity, Users, FileText, Globe, Settings, TrendingUp, X, MapPin, Building2, Trash2 } from 'lucide-react';
+import { ShieldCheck, Database, Activity, Users, FileText, Globe, Settings, TrendingUp, X, MapPin, Building2, Trash2, LayoutDashboard, Search } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
