@@ -120,6 +120,7 @@ const BankDashboard = () => {
         <WorkflowGuide
           role="bank_officer"
           status="approved"
+          apps={applications}
           lastUpdate={mostUrgentApp?.updatedAt}
           count={applications.length}
         />

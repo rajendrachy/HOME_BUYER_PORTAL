@@ -104,8 +104,9 @@ const Dashboard = () => {
            <WorkflowGuide 
               role="citizen" 
               status={applications[0].status} 
+              apps={applications}
               lastUpdate={applications[0].updatedAt}
-              count={1}
+              count={applications.length}
            />
         )}
 

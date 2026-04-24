@@ -3,10 +3,86 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Search, Landmark, CheckCircle2, AlertTriangle, ArrowRight, Clock, Coffee, MessageSquare } from 'lucide-react';
 import { formatTimeElapsed } from '../utils/timeFormat';
 
-const WorkflowGuide = ({ role, status, lastUpdate, count = 0 }) => {
-  const [urgency, setUrgency] = useState(false);
+const AlertItem = ({ app, role, formatTimeElapsed }) => {
   const [secondsElapsed, setSecondsElapsed] = useState(0);
+  const [urgency, setUrgency] = useState(false);
 
+  useEffect(() => {
+    const updateTime = () => {
+      const lastUpdate = app.updatedAt || app.createdAt;
+      if (!lastUpdate) return;
+      const elapsed = Math.floor((new Date() - new Date(lastUpdate)) / 1000);
+      setSecondsElapsed(elapsed);
+      if (elapsed > 60) setUrgency(true);
+      else setUrgency(false);
+    };
+
+    updateTime(); // Initial call
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, [app.updatedAt, app.createdAt]);
+
+  const getDutyForStatus = (s) => {
+    if (role === 'citizen') {
+      if (s === 'pending') return { task: 'Verification Pending', color: 'text-emerald-500', icon: Clock, isWaiting: true };
+      if (s === 'under_review') return { task: 'Audit in Progress', color: 'text-blue-500', icon: Search, isWaiting: true };
+      if (s === 'approved') return { task: 'Bank Selection Required', color: 'text-rose-500', icon: Landmark, isWorking: true };
+      if (s === 'bank_selected') return { task: 'Waiting for Final Grant', color: 'text-emerald-500', icon: Clock, isWaiting: true };
+    }
+    if (role === 'municipality_officer') {
+      if (s === 'pending') return { task: 'New Application Review', color: 'text-rose-500', icon: AlertTriangle, isWorking: true };
+      if (s === 'under_review') return { task: 'Finalize Audit Report', color: 'text-rose-500', icon: FileText, isWorking: true };
+      if (s === 'bank_selected') return { task: 'Finalize Grant Disbursement', color: 'text-rose-500', icon: AlertTriangle, isWorking: true };
+    }
+    if (role === 'bank_officer') {
+      if (s === 'approved') return { task: 'Submit Loan Offer', color: 'text-rose-500', icon: Landmark, isWorking: true };
+    }
+    return null;
+  };
+
+  const duty = getDutyForStatus(app.status);
+  if (!duty) return null;
+
+  const isUrgentAlert = urgency && duty.isWorking;
+  const isWaitingAlert = duty.isWaiting;
+
+  if (!isUrgentAlert && !isWaitingAlert) return null;
+
+  return (
+    <motion.div 
+      initial={{ height: 0, opacity: 0, marginBottom: 0 }}
+      animate={{ height: 'auto', opacity: 1, marginBottom: 24 }}
+      exit={{ height: 0, opacity: 0, marginBottom: 0 }}
+      className={`rounded-[2rem] p-6 text-white flex items-center justify-between shadow-2xl border-2 ${
+        isUrgentAlert 
+          ? 'bg-rose-600 shadow-rose-600/30 border-rose-400/50' 
+          : 'bg-emerald-600 shadow-emerald-600/30 border-emerald-400/50'
+      }`}
+    >
+      <div className="flex items-center gap-4">
+        <div className={`w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center ${isUrgentAlert ? 'animate-pulse' : ''}`}>
+          {isUrgentAlert ? <AlertTriangle size={24} /> : <MessageSquare size={24} />}
+        </div>
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">
+            {isUrgentAlert ? 'Latency Alert' : 'System Message'}: #{app.applicationId || 'N/A'}
+          </p>
+          <h4 className="text-lg font-black tracking-tight flex items-center gap-3">
+            {duty.task}
+            <span className="text-xs font-medium bg-white/20 px-3 py-1 rounded-full border border-white/10">
+              {formatTimeElapsed(secondsElapsed)}
+            </span>
+          </h4>
+        </div>
+      </div>
+      <div className={`px-6 py-2 bg-white rounded-xl text-xs font-black uppercase tracking-widest ${isUrgentAlert ? 'text-rose-600' : 'text-emerald-600'}`}>
+        {isUrgentAlert ? 'High Priority' : 'In Queue'}
+      </div>
+    </motion.div>
+  );
+};
+
+const WorkflowGuide = ({ role, status, lastUpdate, count = 0, apps = [] }) => {
   const steps = [
     { id: 'pending', label: 'Submission', icon: FileText, next: 'Officer Audit' },
     { id: 'under_review', label: 'Review', icon: Search, next: 'Bank Bidding' },
@@ -14,22 +90,6 @@ const WorkflowGuide = ({ role, status, lastUpdate, count = 0 }) => {
     { id: 'bank_selected', label: 'Selection', icon: CheckCircle2, next: 'Municipality Finalization' },
     { id: 'completed', label: 'Finalized', icon: CheckCircle2, next: 'Archive' }
   ];
-
-  useEffect(() => {
-    if (!lastUpdate || count === 0) {
-      setUrgency(false);
-      return;
-    }
-    
-    const interval = setInterval(() => {
-      const elapsed = Math.floor((new Date() - new Date(lastUpdate)) / 1000);
-      setSecondsElapsed(elapsed);
-      if (elapsed > 60) setUrgency(true);
-      else setUrgency(false);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [lastUpdate, count]);
 
   if (count === 0 && role !== 'citizen') {
     return (
@@ -71,52 +131,20 @@ const WorkflowGuide = ({ role, status, lastUpdate, count = 0 }) => {
 
   const duty = getDutyMessage();
 
+  // If no apps passed, create a mock app from props for legacy support
+  const appsToAlert = apps.length > 0 ? apps : (lastUpdate && count > 0 ? [{ updatedAt: lastUpdate, status, applicationId: 'Current' }] : []);
+
   return (
     <div className="space-y-6 mb-12">
       <AnimatePresence>
-        {urgency && status !== 'completed' && count > 0 && (
-          <motion.div 
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="bg-rose-600 rounded-[2rem] p-6 text-white flex items-center justify-between shadow-2xl shadow-rose-600/30 border-2 border-rose-400/50 mb-6"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center animate-pulse">
-                <AlertTriangle size={24} />
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">Action Required Immediately</p>
-                <h4 className="text-lg font-black tracking-tight">Latency Alert: {count} dossiers pending for {formatTimeElapsed(secondsElapsed)}</h4>
-              </div>
-            </div>
-            <div className="px-6 py-2 bg-white text-rose-600 rounded-xl text-xs font-black uppercase tracking-widest">
-              High Priority
-            </div>
-          </motion.div>
-        )}
-
-        {!urgency && duty.isWaiting && count > 0 && (
-          <motion.div 
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="bg-emerald-600 rounded-[2rem] p-6 text-white flex items-center justify-between shadow-2xl shadow-emerald-600/30 border-2 border-emerald-400/50 mb-6"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
-                <MessageSquare size={24} />
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">System Message</p>
-                <h4 className="text-lg font-black tracking-tight">{duty.task}</h4>
-              </div>
-            </div>
-            <div className="px-6 py-2 bg-white text-emerald-600 rounded-xl text-xs font-black uppercase tracking-widest">
-              Standing By
-            </div>
-          </motion.div>
-        )}
+        {appsToAlert.map((app, idx) => (
+          <AlertItem 
+            key={app._id || idx} 
+            app={app} 
+            role={role} 
+            formatTimeElapsed={formatTimeElapsed} 
+          />
+        ))}
       </AnimatePresence>
 
       <div className="bg-slate-900 rounded-[3.5rem] p-10 text-white relative overflow-hidden shadow-2xl shadow-slate-900/20">

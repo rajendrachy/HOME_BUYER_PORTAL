@@ -109,6 +109,7 @@ const OfficerDashboard = () => {
         <WorkflowGuide 
           role="municipality_officer" 
           status={guideStatus} 
+          apps={applications}
           lastUpdate={mostUrgentApp?.updatedAt} 
           count={stats[guideStatus] || 0}
         />
