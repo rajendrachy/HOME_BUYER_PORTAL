@@ -32,6 +32,7 @@ import MyOffers from './pages/bank/MyOffers';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
+import BusinessProposal from './pages/BusinessProposal';
 import NotFound from './pages/NotFound';
 
 const PrivateRoute = ({ children, allowedRoles }) => {
@@ -85,6 +86,7 @@ function AppRoutes() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/track" element={<TrackApplication />} />
+        <Route path="/business" element={<BusinessProposal />} />
         <Route path="/profile" element={
           <PrivateRoute>
             <Profile />

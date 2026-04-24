@@ -95,9 +95,13 @@ const Home = () => {
                </div>
 
                <div className="hidden lg:flex items-center gap-10">
-                  {["features", "guides", "stats"].map(key => (
-                     <a href={`#${key}`} key={key} className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-500 hover:text-blue-600 transition-all">
-                        {t.nav[key]}
+                  {["features", "guides", "stats", "business"].map(key => (
+                     <a 
+                       href={key === 'business' ? '/business' : `#${key}`} 
+                       key={key} 
+                       className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-500 hover:text-blue-600 transition-all"
+                     >
+                        {key === 'business' ? 'Business' : t.nav[key]}
                      </a>
                   ))}
                   {user && (
