@@ -101,7 +101,12 @@ const Dashboard = () => {
         </div>
 
         {applications.length > 0 && (
-           <WorkflowGuide role="citizen" status={applications[0].status} />
+           <WorkflowGuide 
+              role="citizen" 
+              status={applications[0].status} 
+              lastUpdate={applications[0].updatedAt}
+              count={1}
+           />
         )}
 
         {/* Top Stats Dashboard */}

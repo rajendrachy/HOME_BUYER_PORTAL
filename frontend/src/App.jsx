@@ -100,7 +100,7 @@ function AppRoutes() {
             <ApplicationsList />
           </PrivateRoute>
         } />
-        <Route path="/officer/application/:id" element={
+        <Route path="/officer/review/:id" element={
           <PrivateRoute allowedRoles={['municipality_officer', 'admin']}>
             <ApplicationReview />
           </PrivateRoute>

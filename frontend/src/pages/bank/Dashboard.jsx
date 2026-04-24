@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Building2, Landmark, TrendingUp, Users, 
   FileText, ShieldCheck, ArrowRight, Activity, 
-  MapPin, Wallet, Clock, Search, Briefcase
+  MapPin, Wallet, Clock, Search
 } from 'lucide-react';
 import NotificationPanel from '../../components/NotificationPanel';
 import WorkflowGuide from '../../components/WorkflowGuide';
@@ -27,23 +27,32 @@ const BankDashboard = () => {
   const fetchApplications = async () => {
     try {
       const response = await getApprovedApplications();
-      setApplications(response.data.applications || []);
+      // Ensure applications is always an array
+      const appData = response?.data?.applications || [];
+      setApplications(appData);
     } catch (err) {
+      console.error('Lead sync failed', err);
       toast.error('Registry Sync Failed: Access to approved leads restricted.');
+      setApplications([]);
     } finally {
       setLoading(false);
     }
   };
 
   const stats = useMemo(() => {
+    const apps = applications || [];
+    const total = apps.length;
+    const totalSubsidy = apps.reduce((acc, a) => acc + (a.subsidyApproved || 0), 0);
+    const totalCost = apps.reduce((acc, a) => acc + (a.property?.cost || 0), 0);
+    
     return {
-      availableLeads: applications.length,
-      avgSubsidy: applications.length > 0 ? applications.reduce((acc, a) => acc + (a.subsidyApproved || 0), 0) / applications.length : 0,
-      totalCapitalReq: applications.reduce((acc, a) => acc + (a.property?.cost || 0), 0)
+      availableLeads: total,
+      avgSubsidy: total > 0 ? totalSubsidy / total : 0,
+      totalCapitalReq: totalCost
     };
   }, [applications]);
 
-  if (loading && applications.length === 0) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-6">
@@ -53,6 +62,12 @@ const BankDashboard = () => {
       </div>
     );
   }
+
+  // Safely get the most urgent application
+  const sortedApps = [...applications].sort((a, b) => {
+    return new Date(a.updatedAt || 0) - new Date(b.updatedAt || 0);
+  });
+  const mostUrgentApp = sortedApps.length > 0 ? sortedApps[0] : null;
 
   return (
     <div className="min-h-screen bg-[#fafbfc] pt-32 pb-20 font-sans">
@@ -84,7 +99,12 @@ const BankDashboard = () => {
         </div>
 
         {/* Bidding Protocol Guide */}
-        <WorkflowGuide role="bank_officer" status="approved" />
+        <WorkflowGuide 
+          role="bank_officer" 
+          status="approved" 
+          lastUpdate={mostUrgentApp?.updatedAt} 
+          count={applications.length}
+        />
 
         {/* Market Metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
@@ -119,13 +139,12 @@ const BankDashboard = () => {
                 </h2>
                 <div className="flex gap-2">
                    <button className="p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-all"><Search size={16} /></button>
-                   <button className="p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-all"><Filter size={16} /></button>
                 </div>
              </div>
 
              <div className="grid grid-cols-1 gap-8">
                <AnimatePresence>
-                 {applications.length > 0 ? (
+                 {applications && applications.length > 0 ? (
                    applications.map((app, i) => (
                      <motion.div
                        key={app._id}
@@ -154,10 +173,6 @@ const BankDashboard = () => {
                                 <div className="flex items-center gap-2">
                                    <Landmark size={14} className="text-slate-300" />
                                    <p className="text-sm font-bold text-slate-900">NPR {app.property?.cost?.toLocaleString()}</p>
-                                </div>
-                                <div className="flex items-center gap-2 px-4 py-1.5 bg-emerald-50 rounded-full">
-                                   <ShieldCheck size={14} className="text-emerald-500" />
-                                   <p className="text-[10px] font-black text-emerald-600 uppercase">Subsidy Authorized</p>
                                 </div>
                              </div>
                            </div>

@@ -41,37 +41,40 @@ const NotificationPanel = () => {
           </div>
         ) : (
           <AnimatePresence>
-            {notifications.slice(0, 5).map((notif) => (
-              <motion.div 
-                key={notif._id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                onClick={() => {
-                  if (!notif.isRead) markAsRead(notif._id);
-                  if (notif.link) navigate(notif.link);
-                }}
-                className={`p-6 rounded-2xl border transition-all cursor-pointer group ${
-                  notif.isRead 
-                    ? 'border-slate-50 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-200' 
-                    : 'border-blue-100 bg-blue-50/30 shadow-sm'
-                }`}
-              >
-                <div className="flex gap-4">
-                  <div className="mt-1">{getIcon(notif.type)}</div>
-                  <div>
-                    <h4 className={`text-xs font-black uppercase tracking-widest mb-1 ${notif.isRead ? 'text-slate-500' : 'text-slate-900'}`}>
-                      {notif.title}
-                    </h4>
-                    <p className={`text-sm ${notif.isRead ? 'text-slate-400 font-medium' : 'text-slate-600 font-bold'}`}>
-                      {notif.message}
-                    </p>
-                    <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-3">
-                      {new Date(notif.createdAt).toLocaleString()}
-                    </p>
+            {(notifications || []).slice(0, 5).map((notif) => {
+              if (!notif || !notif._id) return null;
+              return (
+                <motion.div 
+                  key={notif._id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  onClick={() => {
+                    if (!notif.isRead && typeof markAsRead === 'function') markAsRead(notif._id);
+                    if (notif.link) navigate(notif.link);
+                  }}
+                  className={`p-6 rounded-2xl border transition-all cursor-pointer group ${
+                    notif.isRead 
+                      ? 'border-slate-50 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-200' 
+                      : 'border-blue-100 bg-blue-50/30 shadow-sm'
+                  }`}
+                >
+                  <div className="flex gap-4">
+                    <div className="mt-1">{getIcon(notif.type)}</div>
+                    <div>
+                      <h4 className={`text-xs font-black uppercase tracking-widest mb-1 ${notif.isRead ? 'text-slate-500' : 'text-slate-900'}`}>
+                        {notif.title}
+                      </h4>
+                      <p className={`text-sm ${notif.isRead ? 'text-slate-400 font-medium' : 'text-slate-600 font-bold'}`}>
+                        {notif.message}
+                      </p>
+                      <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-3">
+                        {notif.createdAt ? new Date(notif.createdAt).toLocaleString() : 'Recent'}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         )}
       </div>

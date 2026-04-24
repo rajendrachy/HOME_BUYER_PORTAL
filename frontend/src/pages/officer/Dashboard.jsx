@@ -35,23 +35,26 @@ const OfficerDashboard = () => {
   const fetchApplications = async () => {
     try {
       const response = await getAllApplicationsWithFilters(filters);
-      setApplications(response.data.applications || []);
+      setApplications(response?.data?.applications || []);
     } catch (err) {
+      console.error('Registry access error', err);
       toast.error('Registry Access Error: Synchronization failed.');
+      setApplications([]);
     } finally {
       setLoading(false);
     }
   };
 
   const stats = useMemo(() => {
-    const s = { pending: 0, under_review: 0, approved: 0, bank_selected: 0, completed: 0, total: applications.length };
-    applications.forEach(app => {
+    const apps = applications || [];
+    const s = { pending: 0, under_review: 0, approved: 0, bank_selected: 0, completed: 0, total: apps.length };
+    apps.forEach(app => {
       if (s[app.status] !== undefined) s[app.status]++;
     });
     return s;
   }, [applications]);
 
-  if (loading && applications.length === 0) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-6">
@@ -62,10 +65,16 @@ const OfficerDashboard = () => {
     );
   }
 
-  // Determine current active status for the guide (most common pending state)
+  // Determine current active status for the guide
   const guideStatus = stats.bank_selected > 0 ? 'bank_selected' : 
                      stats.under_review > 0 ? 'under_review' : 
-                     stats.pending > 0 ? 'pending' : 'approved';
+                     stats.pending > 0 ? 'pending' : (stats.approved > 0 ? 'approved' : 'pending');
+
+  // Safely get the most urgent application
+  const sortedApps = [...applications].sort((a, b) => {
+    return new Date(a.updatedAt || 0) - new Date(b.updatedAt || 0);
+  });
+  const mostUrgentApp = sortedApps.length > 0 ? sortedApps[0] : null;
 
   return (
     <div className="min-h-screen bg-[#fafbfc] pt-32 pb-20 font-sans">
@@ -97,7 +106,12 @@ const OfficerDashboard = () => {
         </div>
 
         {/* Protocol Guide */}
-        <WorkflowGuide role="municipality_officer" status={guideStatus} />
+        <WorkflowGuide 
+          role="municipality_officer" 
+          status={guideStatus} 
+          lastUpdate={mostUrgentApp?.updatedAt} 
+          count={stats[guideStatus] || 0}
+        />
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-16">
@@ -155,47 +169,48 @@ const OfficerDashboard = () => {
                       </tr>
                    </thead>
                    <tbody className="divide-y divide-slate-50">
-                      {applications.map((app) => (
-                         <tr key={app._id} className="group hover:bg-slate-50/50 transition-colors">
-                            <td className="px-12 py-10 font-black text-slate-900 tracking-tight">#{app.applicationId}</td>
-                            <td className="px-12 py-10">
-                               <p className="text-sm font-black text-slate-900 leading-none mb-1">{app.personalInfo?.fullName}</p>
-                               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{app.property?.district}</p>
-                            </td>
-                            <td className="px-12 py-10">
-                               <div className="flex flex-col">
-                                  <span className="text-sm font-black text-slate-900 tracking-tight">
-                                     {new Date(app.createdAt).toLocaleDateString()}
-                                  </span>
-                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                                     {new Date(app.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                               </div>
-                            </td>
-                            <td className="px-12 py-10">
-                               <span className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] border ${
-                                 app.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                 app.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                 app.status === 'under_review' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                                 app.status === 'bank_selected' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' :
-                                 app.status === 'completed' ? 'bg-slate-900 text-white border-slate-900' :
-                                 'bg-rose-50 text-rose-600 border-rose-100'
-                               }`}>
-                                  {app.status.replace('_', ' ')}
-                               </span>
-                            </td>
-                            <td className="px-12 py-10 text-right">
-                               <button 
-                                  onClick={() => navigate(`/officer/review/${app._id}`)}
-                                  className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-all group/btn ml-auto"
-                               >
-                                  {app.status === 'bank_selected' ? 'Finalize Dossier' : 'Audit Record'} 
-                                  <ArrowRight size={14} className="group-hover/btn:translate-x-2 transition-transform" />
-                               </button>
-                            </td>
-                         </tr>
-                      ))}
-                      {applications.length === 0 && (
+                      {applications && applications.length > 0 ? (
+                        applications.map((app) => (
+                          <tr key={app._id} className="group hover:bg-slate-50/50 transition-colors">
+                             <td className="px-12 py-10 font-black text-slate-900 tracking-tight">#{app.applicationId}</td>
+                             <td className="px-12 py-10">
+                                <p className="text-sm font-black text-slate-900 leading-none mb-1">{app.personalInfo?.fullName}</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{app.property?.district}</p>
+                             </td>
+                             <td className="px-12 py-10">
+                                <div className="flex flex-col">
+                                   <span className="text-sm font-black text-slate-900 tracking-tight">
+                                      {new Date(app.createdAt).toLocaleDateString()}
+                                   </span>
+                                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                                      {new Date(app.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                   </span>
+                                </div>
+                             </td>
+                             <td className="px-12 py-10">
+                                <span className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] border ${
+                                  app.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                  app.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                  app.status === 'under_review' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                  app.status === 'bank_selected' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' :
+                                  app.status === 'completed' ? 'bg-slate-900 text-white border-slate-900' :
+                                  'bg-rose-50 text-rose-600 border-rose-100'
+                                }`}>
+                                   {(app.status || 'pending').replace('_', ' ')}
+                                </span>
+                             </td>
+                             <td className="px-12 py-10 text-right">
+                                <button 
+                                   onClick={() => navigate(`/officer/review/${app._id}`)}
+                                   className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-all group/btn ml-auto"
+                                >
+                                   {app.status === 'bank_selected' ? 'Finalize Dossier' : 'Audit Record'} 
+                                   <ArrowRight size={14} className="group-hover/btn:translate-x-2 transition-transform" />
+                                </button>
+                             </td>
+                          </tr>
+                        ))
+                      ) : (
                          <tr>
                             <td colSpan="5" className="px-12 py-32 text-center">
                                <p className="text-slate-300 font-black uppercase tracking-widest">No matching dossiers in current queue.</p>

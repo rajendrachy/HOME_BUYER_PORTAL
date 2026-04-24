@@ -185,7 +185,7 @@ const ApplicationsList = () => {
                   {applications.map(app => (
                     <tr key={app._id} className="hover:bg-gray-50 transition">
                       <td className="px-6 py-4 font-medium text-blue-600">
-                        <Link to={`/officer/application/${app._id}`} className="hover:underline">
+                        <Link to={`/officer/review/${app._id}`} className="hover:underline">
                           {app.applicationId}
                         </Link>
                       </td>
@@ -206,7 +206,7 @@ const ApplicationsList = () => {
                       </td>
                       <td className="px-6 py-4">
                         <Link
-                          to={`/officer/application/${app._id}`}
+                          to={`/officer/review/${app._id}`}
                           className="text-blue-600 hover:underline text-sm"
                         >
                           Review →
@@ -224,7 +224,7 @@ const ApplicationsList = () => {
                 <div key={app._id} className="bg-white rounded-lg shadow-md p-4">
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <Link to={`/officer/application/${app._id}`}  className="text-blue-600 hover:underline font-semibold">
+                      <Link to={`/officer/review/${app._id}`}  className="text-blue-600 hover:underline font-semibold">
                         {app.applicationId}
                       </Link>
                       <p className="text-sm text-gray-600">{app.personalInfo?.fullName}</p>
@@ -238,7 +238,7 @@ const ApplicationsList = () => {
                     <p><span className="text-gray-600">Submitted:</span> {new Date(app.createdAt).toLocaleDateString()}</p>
                   </div>
                   <Link
-                    to={`/officer/application/${app._id}`}
+                    to={`/officer/review/${app._id}`}
                     className="text-blue-600 hover:underline text-sm font-medium"
                   >
                     Review Application →
