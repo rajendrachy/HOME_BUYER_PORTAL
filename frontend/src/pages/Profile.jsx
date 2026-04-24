@@ -279,7 +279,7 @@ const Profile = () => {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex gap-4 mb-16 p-2.5 bg-white/50 backdrop-blur-xl rounded-[2.5rem] w-fit mx-auto lg:mx-0 border border-white shadow-xl shadow-blue-900/5">
+        <div className="flex flex-wrap lg:flex-nowrap gap-3 lg:gap-4 mb-16 p-2 lg:p-2.5 bg-white/50 backdrop-blur-xl rounded-[2rem] lg:rounded-[2.5rem] w-full lg:w-fit mx-auto lg:mx-0 border border-white shadow-xl shadow-blue-900/5 justify-center">
            {[
              { id: 'identity', label: 'Identity Protocol', icon: User },
              { id: 'security', label: 'Access Control', icon: Lock },
@@ -288,14 +288,14 @@ const Profile = () => {
              <button
                key={tab.id}
                onClick={() => setActiveTab(tab.id)}
-               className={`flex items-center gap-4 px-10 py-5 rounded-[1.75rem] text-[11px] font-black uppercase tracking-[0.3em] transition-all duration-500 ${
+               className={`flex-1 lg:flex-none flex items-center justify-center gap-3 lg:gap-4 px-6 lg:px-10 py-4 lg:py-5 rounded-[1.5rem] lg:rounded-[1.75rem] text-[9px] lg:text-[11px] font-black uppercase tracking-[0.2em] lg:tracking-[0.3em] transition-all duration-500 ${
                  activeTab === tab.id 
                    ? 'bg-slate-900 text-white shadow-2xl scale-105' 
                    : 'text-slate-400 hover:text-slate-900 hover:bg-white'
                }`}
              >
-                <tab.icon size={18} />
-                {tab.label}
+                <tab.icon size={16} />
+                <span className="whitespace-nowrap">{tab.label}</span>
              </button>
            ))}
         </div>

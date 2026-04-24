@@ -296,9 +296,22 @@ const Navbar = () => {
                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{user?.role || 'Guest'}</p>
                         </div>
                      </div>
-                     <button onClick={handleLogout} className="w-full flex items-center gap-4 p-4 text-rose-600 font-black uppercase tracking-widest text-[10px]">
-                        <LogOut size={18} /> Sign Out
-                     </button>
+                     <div className="grid gap-2">
+                        <Link 
+                           to="/profile" 
+                           onClick={() => setMobileMenuOpen(false)}
+                           className="flex items-center gap-4 p-4 hover:bg-slate-50 rounded-xl transition-colors"
+                        >
+                           <User size={18} className="text-slate-400" />
+                           <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Identity Hub</span>
+                        </Link>
+                        <button 
+                           onClick={handleLogout} 
+                           className="w-full flex items-center gap-4 p-4 text-rose-600 font-black uppercase tracking-widest text-[10px] hover:bg-rose-50 rounded-xl transition-colors"
+                        >
+                           <LogOut size={18} /> Sign Out
+                        </button>
+                     </div>
                   </div>
                 ) : (
                   <div className="grid gap-3">
