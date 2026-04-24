@@ -148,8 +148,8 @@ const Navbar = () => {
                                 }}
                                 className={`p-8 border-b border-slate-50 cursor-pointer hover:bg-slate-50 transition-all ${!notif.isRead ? 'bg-blue-50/20' : 'bg-white'}`}
                               >
-                                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-2">{notif.title}</p>
-                                <p className="text-sm font-bold text-slate-900 leading-snug">{notif.message}</p>
+                                <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${notif.isRead ? 'text-slate-400 line-through' : 'text-blue-600'}`}>{notif.title}</p>
+                                <p className={`text-sm font-bold leading-snug ${notif.isRead ? 'text-slate-400 line-through opacity-60' : 'text-slate-900'}`}>{notif.message}</p>
                               </div>
                             ))
                           )}

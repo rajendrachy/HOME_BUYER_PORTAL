@@ -61,10 +61,10 @@ const NotificationPanel = () => {
                   <div className="flex gap-4">
                     <div className="mt-1">{getIcon(notif.type)}</div>
                     <div>
-                      <h4 className={`text-xs font-black uppercase tracking-widest mb-1 ${notif.isRead ? 'text-slate-500' : 'text-slate-900'}`}>
+                      <h4 className={`text-xs font-black uppercase tracking-widest mb-1 ${notif.isRead ? 'text-slate-500 line-through' : 'text-slate-900'}`}>
                         {notif.title}
                       </h4>
-                      <p className={`text-sm ${notif.isRead ? 'text-slate-400 font-medium' : 'text-slate-600 font-bold'}`}>
+                      <p className={`text-sm ${notif.isRead ? 'text-slate-400 font-medium line-through opacity-60' : 'text-slate-600 font-bold'}`}>
                         {notif.message}
                       </p>
                       <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-3">
