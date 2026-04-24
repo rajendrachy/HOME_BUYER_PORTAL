@@ -37,6 +37,8 @@ const Footer = () => {
                    { l: 'Market Analytics', p: '/' },
                    { l: 'Tracking Ledger', p: '/track' },
                    { l: 'Business & Partners', p: '/business' },
+                   { l: 'Budget Intel', p: '/budget' },
+                   { l: 'National Intelligence', p: '/intelligence' },
                    { l: 'Eligibility Criteria', p: '#' },
                    { l: 'Partner Banks', p: '#' }
                  ].map((link, i) => (

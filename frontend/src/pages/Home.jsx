@@ -95,13 +95,13 @@ const Home = () => {
                </div>
 
                <div className="hidden lg:flex items-center gap-10">
-                  {["features", "guides", "stats", "business"].map(key => (
+                  {["features", "guides", "stats", "business", "budget", "analytics"].map(key => (
                      <a 
-                       href={key === 'business' ? '/business' : `#${key}`} 
+                       href={key === 'business' ? '/business' : key === 'budget' ? '/budget' : key === 'analytics' ? '/intelligence' : `#${key}`} 
                        key={key} 
                        className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-500 hover:text-blue-600 transition-all"
                      >
-                        {key === 'business' ? 'Business' : t.nav[key]}
+                        {key === 'business' ? 'Business' : key === 'budget' ? 'Budget' : key === 'analytics' ? 'Analytics' : t.nav[key]}
                      </a>
                   ))}
                   {user && (
