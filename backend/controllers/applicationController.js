@@ -772,6 +772,53 @@ const adminUpdateApplication = async (req, res) => {
   }
 };
 
+// @desc    Citizen cancels their own application
+// @route   DELETE /api/applications/:id
+const cancelApplication = async (req, res) => {
+  try {
+    const application = await Application.findById(req.params.id);
+    
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+    
+    // Check ownership
+    if (application.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to cancel this application' });
+    }
+    
+    // Check if can be cancelled
+    if (['completed', 'rejected'].includes(application.status)) {
+      return res.status(400).json({ message: 'Cannot cancel an application that is already completed or rejected' });
+    }
+    
+    application.status = 'cancelled';
+    application.cancelledAt = Date.now();
+    await application.save();
+    
+    // 🔔 Notify officers about cancellation
+    const io = req.app.get('io');
+    const officers = await User.find({ role: { $in: ['municipality_officer', 'admin'] } });
+    for (const officer of officers) {
+      sendNotification(io, officer._id, {
+        title: 'Application Cancelled 🚫',
+        message: `Citizen ${req.user.name} cancelled application #${application.applicationId}.`,
+        type: 'warning',
+        link: `/officer/dashboard`
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Application cancelled successfully',
+      application
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   submitApplication,
   getMyApplications,
@@ -784,6 +831,7 @@ module.exports = {
   getApprovedApplications,
   getMyOffers,
   acceptOffer,
+  cancelApplication,
   adminUpdateApplication
 };
 

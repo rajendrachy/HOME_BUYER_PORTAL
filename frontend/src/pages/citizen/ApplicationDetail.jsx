@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getApplicationById, acceptOffer } from '../../services/api';
+import { getApplicationById, acceptOffer, cancelApplication } from '../../services/api';
 import { generateApplicationPDF } from '../../utils/pdfGenerator';
 import { getFileUrl, getDocPreviewUrl } from '../../utils/fileConfig';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,7 +8,8 @@ import {
   ChevronLeft, FileText, Download, User, 
   Building2, Landmark, ShieldCheck, MapPin, 
   Wallet, Clock, CheckCircle2, XCircle, 
-  Eye, ExternalLink, Calendar, Info, Search
+  Eye, ExternalLink, Calendar, Info, Search,
+  Trash2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -19,6 +20,7 @@ const ApplicationDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [accepting, setAccepting] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [rawPreviewUrl, setRawPreviewUrl] = useState(null);
 
@@ -51,13 +53,29 @@ const ApplicationDetail = () => {
     }
   };
 
+  const handleCancel = async () => {
+    if (!window.confirm('WARNING: Are you sure you want to cancel this application? This action will immediately terminate the verification process and notify the municipality officer.')) return;
+    setCancelling(true);
+    try {
+      await cancelApplication(id);
+      toast.success('Application cancelled successfully.');
+      navigate('/citizen/dashboard');
+    } catch (err) {
+      toast.error('Cancellation failed: ' + (err.response?.data?.message || 'System error'));
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const getStatusConfig = (status) => {
     switch (status) {
       case 'pending': return { color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100', icon: Clock, label: 'Pending' };
       case 'under_review': return { color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', icon: Info, label: 'Under Review' };
       case 'approved': return { color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', icon: CheckCircle2, label: 'Approved' };
       case 'rejected': return { color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100', icon: XCircle, label: 'Rejected' };
+      case 'cancelled': return { color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-200', icon: Trash2, label: 'Cancelled' };
       case 'bank_selected': return { color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100', icon: Landmark, label: 'Bank Selected' };
+      case 'completed': return { color: 'text-emerald-700', bg: 'bg-emerald-100', border: 'border-emerald-200', icon: CheckCircle2, label: 'Completed' };
       default: return { color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-100', icon: FileText, label: status };
     }
   };
@@ -128,7 +146,17 @@ const ApplicationDetail = () => {
               </p>
            </motion.div>
 
-           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex gap-4">
+           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-wrap gap-4">
+              {['pending', 'under_review', 'approved', 'bank_selected'].includes(application.status) && (
+                 <button 
+                   onClick={handleCancel}
+                   disabled={cancelling}
+                   className="btn-premium flex items-center gap-3 bg-white border-2 border-rose-100 text-rose-600 hover:border-rose-600 hover:bg-rose-50 shadow-sm"
+                 >
+                   <Trash2 size={20} />
+                   {cancelling ? 'Terminating...' : 'Cancel Application'}
+                 </button>
+              )}
               <button 
                 onClick={() => generateApplicationPDF(application)}
                 className="btn-premium flex items-center gap-3 group bg-white border-2 border-slate-100 text-slate-900 hover:border-blue-600 hover:text-blue-600 shadow-sm"

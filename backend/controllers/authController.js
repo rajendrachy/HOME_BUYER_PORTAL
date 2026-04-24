@@ -99,7 +99,8 @@ const registerUser = async (req, res) => {
 // @access  Public
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email: rawEmail, password } = req.body;
+    const email = rawEmail?.toLowerCase();
 
     // Check for user email
     const user = await User.findOne({ email }).select('+password +twoFactorSecret');

@@ -14,6 +14,7 @@ const {
   getApprovedApplications,
   getMyOffers,        // ✅ NEW: Get all offers submitted by this bank
   acceptOffer,
+  cancelApplication,   // ✅ Added this import
   adminUpdateApplication
 } = require('../controllers/applicationController');
 
@@ -28,6 +29,8 @@ router.post('/', protect, uploadDocuments, submitApplication);
 router.get('/my', protect, getMyApplications);
 // Citizen accepts a bank offer
 router.put('/:id/accept-offer/:offerId', protect, acceptOffer);
+// Citizen cancels their application
+router.delete('/:id', protect, cancelApplication);
 
 // ============= MUNICIPALITY OFFICER ROUTES (must come BEFORE /:id) =============
 // Officer views all applications (with filters)

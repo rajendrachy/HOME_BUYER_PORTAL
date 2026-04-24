@@ -23,8 +23,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const { status, data } = error.response || {};
-    // Only redirect if it's a 401 AND not a 2FA requirement
-    if (status === 401 && !data?.requires2FA) {
+    // Only redirect if it's a 401 AND not a 2FA requirement AND not already on login/register
+    const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/register';
+    if (status === 401 && !data?.requires2FA && !isAuthPage) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
@@ -76,6 +77,7 @@ export const getMyApplications = (filters = {}) => {
 export const getApplicationById = (id) => api.get(`/applications/${id}`);
 export const trackApplication = (appId) => api.get(`/applications/track/${appId}`);
 export const acceptOffer = (appId, offerId) => api.put(`/applications/${appId}/accept-offer/${offerId}`);
+export const cancelApplication = (id) => api.delete(`/applications/${id}`);
 
 // ============= MUNICIPALITY OFFICER APIs =============
 export const getAllApplications = () => api.get('/applications/all');
