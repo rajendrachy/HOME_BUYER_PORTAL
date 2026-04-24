@@ -74,6 +74,12 @@ const SubmitApplication = () => {
     const name = e.target.name;
     
     if (file) {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error('Invalid file format. Please upload JPG, PNG, WEBP, or PDF.');
+        return;
+      }
+
       setFiles(prev => ({ ...prev, [name]: file }));
       
       // Revoke old URL if exists
@@ -268,6 +274,7 @@ const SubmitApplication = () => {
                 type="file" 
                 name={file.name} 
                 onChange={handleFileChange} 
+                accept=".jpg,.jpeg,.png,.pdf,.webp"
                 className="absolute inset-0 opacity-0 z-10 cursor-pointer"
               />
               <div className={`p-8 bg-slate-50 border-2 border-dashed ${files[file.name] ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-100 group-hover:border-blue-200'} rounded-[2.5rem] transition-all flex items-center justify-between`}>

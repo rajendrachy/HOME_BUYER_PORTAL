@@ -7,7 +7,7 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'home-buyer-portal/documents',
-    allowed_formats: ['jpg', 'png', 'pdf', 'jpeg'],
+    allowed_formats: ['jpg', 'png', 'pdf', 'jpeg', 'webp'],
     resource_type: 'auto',
     access_mode: 'public', // Ensure documents are publicly accessible
     public_id: (req, file) => {

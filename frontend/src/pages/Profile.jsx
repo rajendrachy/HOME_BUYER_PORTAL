@@ -59,6 +59,11 @@ const Profile = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      return toast.error('Invalid image format. Please upload JPG, PNG, or WEBP.');
+    }
+    
     if (file.size > 5 * 1024 * 1024) {
       return toast.error('Image size must be less than 5MB');
     }
@@ -217,7 +222,7 @@ const Profile = () => {
                       ref={fileInputRef} 
                       onChange={handleImageChange} 
                       className="hidden" 
-                      accept="image/*"
+                      accept=".jpg,.jpeg,.png,.webp"
                     />
                     
                     {/* Role Badge Floating */}
