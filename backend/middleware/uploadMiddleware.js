@@ -8,13 +8,7 @@ const storage = new CloudinaryStorage({
   params: {
     folder: 'home-buyer-portal/documents',
     allowed_formats: ['jpg', 'png', 'pdf', 'jpeg'],
-    resource_type: (req, file) => {
-      // Treat PDFs as 'raw' to avoid Cloudinary's image-security restrictions on PDFs
-      if (file.mimetype === 'application/pdf' || file.originalname.endsWith('.pdf')) {
-        return 'raw';
-      }
-      return 'image';
-    },
+    resource_type: 'auto',
     access_mode: 'public', // Ensure documents are publicly accessible
     public_id: (req, file) => {
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);

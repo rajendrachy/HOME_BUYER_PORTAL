@@ -324,6 +324,12 @@ const ApplicationDetail = () => {
                                 </div>
                              </div>
 
+                             {offer.message && (
+                                <div className="mb-10 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 italic text-xs text-slate-600 leading-relaxed">
+                                   "{offer.message}"
+                                </div>
+                             )}
+
                              {offer.status === 'offered' && application.status !== 'bank_selected' && (
                                 <button 
                                    onClick={() => handleAcceptOffer(offer._id)}
@@ -365,6 +371,18 @@ const ApplicationDetail = () => {
                  </div>
                  <div className="absolute bottom-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full blur-3xl -mr-16 -mb-16" />
               </div>
+
+              {application.status === 'rejected' && application.rejectionReason && (
+                 <div className="bg-rose-50 rounded-[3rem] p-10 border border-rose-100 mb-8">
+                    <div className="flex items-center gap-4 mb-6">
+                       <XCircle className="text-rose-600" size={24} />
+                       <h4 className="text-xs font-black uppercase tracking-widest text-rose-900">Official Rejection Reason</h4>
+                    </div>
+                    <p className="text-sm font-medium text-rose-800 leading-relaxed italic">
+                       "{application.rejectionReason}"
+                    </p>
+                 </div>
+              )}
 
               {application.officerNotes && (
                  <div className="bg-amber-50 rounded-[3rem] p-10 border border-amber-100">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Search, Landmark, CheckCircle2, AlertTriangle, ArrowRight, Clock, Coffee } from 'lucide-react';
+import { FileText, Search, Landmark, CheckCircle2, AlertTriangle, ArrowRight, Clock, Coffee, MessageSquare } from 'lucide-react';
+import { formatTimeElapsed } from '../utils/timeFormat';
 
 const WorkflowGuide = ({ role, status, lastUpdate, count = 0 }) => {
   const [urgency, setUrgency] = useState(false);
@@ -48,19 +49,22 @@ const WorkflowGuide = ({ role, status, lastUpdate, count = 0 }) => {
 
   const getDutyMessage = () => {
     if (role === 'citizen') {
-      if (status === 'pending') return { task: 'Wait for Verification', color: 'text-amber-500', icon: Clock };
-      if (status === 'under_review') return { task: 'Audit in Progress', color: 'text-blue-500', icon: Search };
-      if (status === 'approved') return { task: 'Choose Your Bank', color: 'text-emerald-500', icon: Landmark };
-      if (status === 'bank_selected') return { task: 'Waiting for Final Grant', color: 'text-indigo-500', icon: Clock };
+      if (status === 'pending') return { task: 'Wait for Verification', color: 'text-emerald-500', icon: Clock, isWaiting: true };
+      if (status === 'under_review') return { task: 'Audit in Progress', color: 'text-blue-500', icon: Search, isWaiting: true };
+      if (status === 'approved') return { task: 'Choose Your Bank', color: 'text-rose-500', icon: Landmark, isWorking: true };
+      if (status === 'bank_selected') return { task: 'Waiting for Final Grant', color: 'text-emerald-500', icon: Clock, isWaiting: true };
       if (status === 'completed') return { task: 'Grant Disbursed', color: 'text-slate-400', icon: CheckCircle2 };
     }
     if (role === 'municipality_officer') {
-      if (status === 'pending') return { task: `Review ${count} New Application(s)`, color: 'text-rose-500', icon: AlertTriangle };
-      if (status === 'under_review') return { task: `Finalize ${count} Audit Report(s)`, color: 'text-amber-500', icon: FileText };
-      if (status === 'bank_selected') return { task: `Finalize ${count} Grant Disbursement(s)`, color: 'text-rose-500', icon: AlertTriangle };
+      if (status === 'pending') return { task: `Review ${count} New Application(s)`, color: 'text-rose-500', icon: AlertTriangle, isWorking: true };
+      if (status === 'under_review') return { task: `Finalize ${count} Audit Report(s)`, color: 'text-rose-500', icon: FileText, isWorking: true };
+      if (status === 'bank_selected') return { task: `Finalize ${count} Grant Disbursement(s)`, color: 'text-rose-500', icon: AlertTriangle, isWorking: true };
+      if (status === 'completed') return { task: 'Grant Disbursed', color: 'text-emerald-500', icon: CheckCircle2, isWaiting: true };
     }
     if (role === 'bank_officer') {
-      if (status === 'approved') return { task: `Submit Offer for ${count} Lead(s)`, color: 'text-rose-500', icon: Landmark };
+      if (status === 'approved') return { task: `Submit Offer for ${count} Lead(s)`, color: 'text-rose-500', icon: Landmark, isWorking: true };
+      if (status === 'bank_selected') return { task: `Waiting for Municipality Finalization`, color: 'text-emerald-500', icon: Clock, isWaiting: true };
+      if (status === 'completed') return { task: 'Grant Disbursed', color: 'text-emerald-500', icon: CheckCircle2, isWaiting: true };
     }
     return { task: 'Synchronizing...', color: 'text-slate-400', icon: Clock };
   };
@@ -69,14 +73,13 @@ const WorkflowGuide = ({ role, status, lastUpdate, count = 0 }) => {
 
   return (
     <div className="space-y-6 mb-12">
-      {/* 🚨 URGENCY ALERT 🚨 */}
       <AnimatePresence>
         {urgency && status !== 'completed' && count > 0 && (
           <motion.div 
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="bg-rose-600 rounded-[2rem] p-6 text-white flex items-center justify-between shadow-2xl shadow-rose-600/30 border-2 border-rose-400/50"
+            className="bg-rose-600 rounded-[2rem] p-6 text-white flex items-center justify-between shadow-2xl shadow-rose-600/30 border-2 border-rose-400/50 mb-6"
           >
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center animate-pulse">
@@ -84,11 +87,33 @@ const WorkflowGuide = ({ role, status, lastUpdate, count = 0 }) => {
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">Action Required Immediately</p>
-                <h4 className="text-lg font-black tracking-tight">Latency Alert: {count} dossiers pending for {Math.floor(secondsElapsed / 60)}m {secondsElapsed % 60}s</h4>
+                <h4 className="text-lg font-black tracking-tight">Latency Alert: {count} dossiers pending for {formatTimeElapsed(secondsElapsed)}</h4>
               </div>
             </div>
             <div className="px-6 py-2 bg-white text-rose-600 rounded-xl text-xs font-black uppercase tracking-widest">
               High Priority
+            </div>
+          </motion.div>
+        )}
+
+        {!urgency && duty.isWaiting && count > 0 && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-emerald-600 rounded-[2rem] p-6 text-white flex items-center justify-between shadow-2xl shadow-emerald-600/30 border-2 border-emerald-400/50 mb-6"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                <MessageSquare size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">System Message</p>
+                <h4 className="text-lg font-black tracking-tight">{duty.task}</h4>
+              </div>
+            </div>
+            <div className="px-6 py-2 bg-white text-emerald-600 rounded-xl text-xs font-black uppercase tracking-widest">
+              Standing By
             </div>
           </motion.div>
         )}

@@ -3,6 +3,7 @@ import { useSocket } from '../contexts/SocketContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, CheckCircle2, Info, XCircle, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { formatRelativeTime } from '../utils/timeFormat';
 
 const NotificationPanel = () => {
   const { notifications, unreadCount, markAsRead } = useSocket() || { notifications: [], unreadCount: 0 };
@@ -44,7 +45,7 @@ const NotificationPanel = () => {
             {(notifications || []).slice(0, 5).map((notif) => {
               if (!notif || !notif._id) return null;
               return (
-                <motion.div 
+                <motion.div
                   key={notif._id}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -52,11 +53,10 @@ const NotificationPanel = () => {
                     if (!notif.isRead && typeof markAsRead === 'function') markAsRead(notif._id);
                     if (notif.link) navigate(notif.link);
                   }}
-                  className={`p-6 rounded-2xl border transition-all cursor-pointer group ${
-                    notif.isRead 
-                      ? 'border-slate-50 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-200' 
+                  className={`p-6 rounded-2xl border transition-all cursor-pointer group ${notif.isRead
+                      ? 'border-slate-50 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-200'
                       : 'border-blue-100 bg-blue-50/30 shadow-sm'
-                  }`}
+                    }`}
                 >
                   <div className="flex gap-4">
                     <div className="mt-1">{getIcon(notif.type)}</div>
@@ -68,7 +68,7 @@ const NotificationPanel = () => {
                         {notif.message}
                       </p>
                       <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-3">
-                        {notif.createdAt ? new Date(notif.createdAt).toLocaleString() : 'Recent'}
+                        {formatRelativeTime(notif.createdAt)} ago
                       </p>
                     </div>
                   </div>

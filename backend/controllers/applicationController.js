@@ -65,7 +65,7 @@ const submitApplication = async (req, res) => {
           title: 'New Application Received 📋',
           message: `${req.user.name || 'A citizen'} submitted application #${application.applicationId}.`,
           type: 'info',
-          link: `/officer/application/${application._id}`
+          link: `/officer/review/${application._id}`
         });
       }
     } catch (notifErr) {
@@ -117,29 +117,37 @@ const getMyApplications = async (req, res) => {
 // @route   GET /api/applications/:id
 const getApplicationById = async (req, res) => {
   try {
+    console.log(`[getApplicationById] Request for ID: ${req.params.id} by User: ${req.user._id} (${req.user.role})`);
     const application = await Application.findById(req.params.id);
     
     if (!application) {
+      console.log(`[getApplicationById] Application not found for ID: ${req.params.id}`);
       return res.status(404).json({ message: 'Application not found' });
     }
     
     // Define permissions
-    const isOwner = application.userId.toString() === req.user._id.toString();
+    const isOwner = application.userId?.toString() === req.user._id.toString();
     const isMunicipalityOfficer = req.user.role === 'municipality_officer';
     const isBankOfficer = req.user.role === 'bank_officer';
     const isAdmin = req.user.role === 'admin';
     
-    // Bank officers can only view approved or bank_selected applications
-    if (isBankOfficer && (application.status !== 'approved' && application.status !== 'bank_selected')) {
+    // Admins have absolute override access
+    if (isAdmin) {
+      return res.json({ success: true, application });
+    }
+
+    // Bank officers can view approved, bank_selected, or completed applications
+    if (isBankOfficer && (application.status !== 'approved' && application.status !== 'bank_selected' && application.status !== 'completed')) {
+      console.log(`[getApplicationById] Denied Bank Officer: Status is ${application.status}`);
       return res.status(403).json({ 
         success: false,
-        message: 'Bank officers can only view approved or bank selected applications',
+        message: 'Bank officers can only view approved, bank selected, or completed applications',
         currentStatus: application.status 
       });
     }
 
     // Check if user is authorized for this specific application
-    if (isOwner || isMunicipalityOfficer || isBankOfficer || isAdmin) {
+    if (isOwner || isMunicipalityOfficer || isBankOfficer) {
       return res.json({
         success: true,
         application
@@ -389,7 +397,7 @@ const updateStatus = async (req, res) => {
 // @route   POST /api/applications/:id/offer
 const submitLoanOffer = async (req, res) => {
   try {
-    const { loanAmount, interestRate, processingFee, tenure } = req.body;
+    const { loanAmount, interestRate, processingFee, tenure, message } = req.body;
     
     const application = await Application.findById(req.params.id).populate('userId');
     
@@ -423,6 +431,7 @@ const submitLoanOffer = async (req, res) => {
       processingFee,
       tenure,
       emi: Math.round(emi),
+      message,
       offeredAt: new Date(),
       status: 'offered'
     };
@@ -556,6 +565,7 @@ const getMyOffers = async (req, res) => {
       if (myOffer) {
         myOffers.push({
           applicationId: app.applicationId,
+          _id: app._id,
           applicantName: app.userId?.name,
           applicantEmail: app.userId?.email,
           applicantPhone: app.userId?.phone,

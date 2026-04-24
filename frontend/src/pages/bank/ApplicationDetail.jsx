@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getApplicationById } from '../../services/api';
+import api, { getApplicationById } from '../../services/api';
 import { getFileUrl, getDocPreviewUrl } from '../../utils/fileConfig';
 import { motion } from 'framer-motion';
 import { 
@@ -8,13 +8,17 @@ import {
   Building2, Landmark, Wallet, Eye, 
   ShieldCheck, LandPlot, TrendingUp, Info
 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 const BankApplicationDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [application, setApplication] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [bankNotes, setBankNotes] = useState('');
 
   useEffect(() => {
     loadApplication();
@@ -24,10 +28,20 @@ const BankApplicationDetail = () => {
     try {
       const { data } = await getApplicationById(id);
       setApplication(data.application);
+      setBankNotes(data.application.bankNotes || '');
     } catch (err) {
       setError('Operational Error: Ledger access denied.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateNotes = async () => {
+    try {
+      await api.put(`/applications/${id}/status`, { bankNotes });
+      toast.success('Institutional notes synchronized.');
+    } catch (err) {
+      toast.error('Failed to sync notes.');
     }
   };
 
@@ -43,12 +57,18 @@ const BankApplicationDetail = () => {
   }
 
   if (error || !application) {
+    const isOfficer = user?.role === 'municipality_officer' || user?.role === 'admin';
+    const backLink = isOfficer ? '/officer/dashboard' : '/bank/dashboard';
+    
     return (
       <div className="min-h-screen bg-[#fafbfc] flex items-center justify-center p-6">
          <div className="text-center bg-white p-16 rounded-[3rem] shadow-sm border border-slate-100 max-w-md">
-            <h2 className="text-2xl font-black text-slate-900 mb-4">Record Not Found</h2>
-            <button onClick={() => navigate('/bank/dashboard')} className="btn-premium w-full flex items-center justify-center gap-3">
-               <ChevronLeft size={20} /> Return to Portfolio
+            <h2 className="text-2xl font-black text-slate-900 mb-4">{error === 'Record Not Found' ? 'Dossier Missing' : 'Access Restricted'}</h2>
+            <p className="text-sm font-medium text-slate-400 mb-10 leading-relaxed">
+              {error || 'The requested application record is not available within your current security clearance level.'}
+            </p>
+            <button onClick={() => navigate(backLink)} className="btn-premium w-full flex items-center justify-center gap-3">
+               <ChevronLeft size={20} /> Return to Queue
             </button>
          </div>
       </div>
@@ -211,6 +231,22 @@ const BankApplicationDetail = () => {
                     </div>
                  </div>
                  <div className="absolute bottom-0 right-0 w-32 h-32 bg-indigo-600/10 rounded-full blur-3xl -mr-16 -mb-16" />
+              </div>
+
+              <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm">
+                 <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">Internal Bank Audit Notes</h4>
+                 <textarea 
+                    className="w-full p-6 bg-slate-50 rounded-2xl border-none focus:ring-4 focus:ring-indigo-600/5 font-medium text-slate-700 text-sm mb-6"
+                    placeholder="Enter reasoning for this lead decision..."
+                    value={bankNotes}
+                    onChange={(e) => setBankNotes(e.target.value)}
+                 />
+                 <button 
+                    onClick={handleUpdateNotes}
+                    className="w-full py-4 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all"
+                 >
+                    Sync Audit Notes
+                 </button>
               </div>
 
               {application.officerNotes && (

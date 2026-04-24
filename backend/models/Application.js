@@ -42,6 +42,7 @@ const applicationSchema = new mongoose.Schema({
   },
   rejectionReason: String,
   officerNotes: String,
+  bankNotes: String,
   
   // ✅ DOCUMENT UPLOAD FIELDS (ADD THESE)
   citizenshipDocument: {
@@ -74,6 +75,7 @@ const applicationSchema = new mongoose.Schema({
       enum: ['offered', 'accepted', 'rejected'],
       default: 'offered'
     },
+    message: String,
     offeredAt: {
       type: Date,
       default: Date.now

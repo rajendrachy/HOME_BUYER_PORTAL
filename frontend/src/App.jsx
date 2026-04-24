@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth, AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Layout/Navbar';
 import Footer from './components/Layout/Footer';
@@ -52,15 +52,34 @@ const PrivateRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
+const LegacyRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/officer/review/${id}`} replace />;
+};
+
 function AppRoutes() {
   const { user } = useAuth();
   const location = useLocation();
   const isHomePage = location.pathname === '/';
 
+  const getDashboardLink = () => {
+    if (!user) return '/';
+    switch (user.role) {
+      case 'citizen': return '/citizen/dashboard';
+      case 'municipality_officer': return '/officer/dashboard';
+      case 'bank_officer': return '/bank/dashboard';
+      case 'admin': return '/admin/dashboard';
+      default: return '/';
+    }
+  };
+
   return (
     <>
       {!isHomePage && <Navbar />}
       <Routes>
+        {/* Legacy Alias for older notifications */}
+        <Route path="/officer/application/:id" element={<LegacyRedirect />} />
+
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -143,7 +162,7 @@ function AppRoutes() {
         } />
 
         {/* Fallback */}
-        <Route path="*" element={<NotFound />} />
+        <Route path="*" element={<Navigate to={getDashboardLink()} replace />} />
       </Routes>
       <Footer />
     </>

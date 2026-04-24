@@ -442,9 +442,9 @@ const AdminDashboard = () => {
                                    </button>
                                    <button 
                                       onClick={() => handleDeleteUser(u._id)}
-                                      disabled={userActionLoading === u._id}
-                                      className="p-3 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center disabled:opacity-50"
-                                      title="Purge Identity"
+                                      disabled={userActionLoading === u._id || u.role === 'admin'}
+                                      className={`p-3 rounded-xl transition-all flex items-center justify-center disabled:opacity-30 ${(u.role === 'admin') ? 'bg-slate-50 text-slate-300 cursor-not-allowed' : 'bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white'}`}
+                                      title={u.role === 'admin' ? "Protected Identity" : "Purge Identity"}
                                    >
                                       {userActionLoading === u._id ? <div className="w-4 h-4 border-2 border-rose-200 border-t-rose-600 rounded-full animate-spin" /> : <Trash2 size={16} />}
                                    </button>
@@ -490,7 +490,7 @@ const AdminDashboard = () => {
                                 <div><p className="text-sm font-black text-slate-900">{bank.name}</p><p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{bank.branch} Branch</p></div>
                                 <button 
                                    onClick={() => handleDeleteBank(bank._id)}
-                                   className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-rose-100 rounded-lg"
+                                   className="text-rose-500 transition-colors p-2 hover:bg-rose-100 rounded-lg"
                                 >
                                    <Trash2 size={16} />
                                 </button>
@@ -515,7 +515,7 @@ const AdminDashboard = () => {
                                 <div><p className="text-sm font-black text-slate-900">{muni.name}</p><p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{muni.district} District</p></div>
                                 <button 
                                    onClick={() => handleDeleteMuni(muni._id)}
-                                   className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-rose-100 rounded-lg"
+                                   className="text-rose-500 transition-colors p-2 hover:bg-rose-100 rounded-lg"
                                 >
                                    <Trash2 size={16} />
                                 </button>

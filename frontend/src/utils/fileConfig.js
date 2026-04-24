@@ -32,6 +32,11 @@ export const getDocPreviewUrl = (path) => {
   const url = getFileUrl(path);
   if (!url) return null;
 
-  // Returning direct URL for all PDFs. Browser native viewer is generally more reliable than Google Docs Viewer for remote/Cloudinary files.
+  // If it's a PDF, use Google Docs Viewer to ensure it renders correctly in an iframe
+  // especially if it was uploaded to Cloudinary as 'raw' (application/octet-stream)
+  if (url.toLowerCase().endsWith('.pdf') || url.includes('/raw/upload/')) {
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+  }
+
   return url;
 };

@@ -36,7 +36,8 @@ const ApplicationReview = () => {
       setFormData({
         status: data.application.status || 'under_review',
         subsidyApproved: data.application.subsidyApproved || '',
-        officerNotes: data.application.officerNotes || ''
+        officerNotes: data.application.officerNotes || '',
+        rejectionReason: data.application.rejectionReason || ''
       });
     } catch (err) {
       setError('System Error: Record retrieval failed.');
@@ -53,8 +54,9 @@ const ApplicationReview = () => {
     try {
       await updateApplicationStatus(id, {
         status: formData.status,
-        subsidyApproved: parseInt(formData.subsidyApproved),
-        officerNotes: formData.officerNotes
+        subsidyApproved: parseInt(formData.subsidyApproved) || 0,
+        officerNotes: formData.officerNotes,
+        rejectionReason: formData.rejectionReason
       });
       toast.success('Dossier updated and synchronized with main ledger.');
       navigate('/officer/dashboard');
@@ -72,6 +74,21 @@ const ApplicationReview = () => {
            <div className="w-16 h-16 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin" />
            <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">Accessing Record Stream</p>
         </div>
+      </div>
+    );
+  }
+
+  if (error || (!application && !loading)) {
+    return (
+      <div className="min-h-screen bg-[#fafbfc] flex items-center justify-center p-6">
+         <div className="text-center bg-white p-16 rounded-[3rem] shadow-sm border border-slate-100 max-w-md">
+            <AlertTriangle size={64} className="text-rose-100 mx-auto mb-8" />
+            <h2 className="text-2xl font-black text-slate-900 mb-4">Dossier Access Error</h2>
+            <p className="text-slate-400 font-medium mb-10">{error || 'The requested application record could not be retrieved from the central registry.'}</p>
+            <button onClick={() => navigate('/officer/dashboard')} className="btn-premium w-full flex items-center justify-center gap-3">
+               <ChevronLeft size={20} /> Back to Dashboard
+            </button>
+         </div>
       </div>
     );
   }
@@ -320,8 +337,29 @@ const ApplicationReview = () => {
                        </p>
                     </div>
 
+                    <AnimatePresence>
+                       {formData.status === 'rejected' && (
+                          <motion.div
+                             initial={{ opacity: 0, height: 0 }}
+                             animate={{ opacity: 1, height: 'auto' }}
+                             exit={{ opacity: 0, height: 0 }}
+                          >
+                             <label className="text-[10px] font-black uppercase tracking-widest text-rose-600 block mb-4">Official Rejection Message (To User)</label>
+                             <textarea
+                                name="rejectionReason"
+                                value={formData.rejectionReason || ''}
+                                onChange={handleChange}
+                                rows="4"
+                                className="w-full p-6 bg-rose-50 rounded-2xl border-2 border-rose-100 focus:ring-4 focus:ring-rose-500/5 font-medium text-rose-900 text-sm"
+                                placeholder="Explain specifically why this application is being rejected..."
+                                required={formData.status === 'rejected'}
+                             />
+                          </motion.div>
+                       )}
+                    </AnimatePresence>
+
                     <div>
-                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-4">Operational Notes</label>
+                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-4">Operational Notes (Internal)</label>
                        <textarea
                           name="officerNotes"
                           value={formData.officerNotes}

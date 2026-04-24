@@ -21,6 +21,7 @@ const SubmitOffer = () => {
     interestRate: '8.5',
     processingFee: '10000',
     tenure: '20',
+    message: ''
   });
 
   useEffect(() => {
@@ -63,6 +64,7 @@ const SubmitOffer = () => {
         interestRate: parseFloat(formData.interestRate),
         processingFee: parseFloat(formData.processingFee),
         tenure: parseFloat(formData.tenure),
+        message: formData.message
       });
       toast.success('Mortgage offer successfully broadcasted to citizen ledger.');
       navigate('/bank/dashboard');
