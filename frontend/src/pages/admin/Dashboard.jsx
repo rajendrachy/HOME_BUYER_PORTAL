@@ -10,6 +10,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import NotificationPanel from '../../components/NotificationPanel';
+import AdvancedSearch from '../../components/AdvancedSearch';
 import L from 'leaflet';
 
 // Leaflet Icon Fix
@@ -362,18 +363,11 @@ const AdminDashboard = () => {
 
            {activeTab === 'applications' && (
               <motion.div key="applications" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8">
-                 <div className="bg-white border border-slate-100 rounded-[2rem] p-4 shadow-sm flex flex-col md:flex-row gap-4 items-center">
-                    <div className="relative flex-1 w-full">
-                       <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
-                       <input
-                         type="text"
-                         placeholder="Scan record ledger..."
-                         value={filters.search}
-                         onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                         className="w-full pl-14 pr-6 py-4 bg-slate-50/50 rounded-xl focus:outline-none focus:ring-4 focus:ring-slate-900/5 font-medium text-slate-900 border border-transparent focus:border-slate-100 transition-all"
-                       />
-                    </div>
-                 </div>
+                 <AdvancedSearch 
+                   filters={filters} 
+                   onFilterChange={setFilters} 
+                   districts={Array.from(new Set(applications.map(a => a.property?.district).filter(Boolean)))}
+                 />
 
                  <div className="bg-white border border-slate-100 rounded-[3rem] shadow-sm overflow-hidden">
                     <table className="w-full text-left">

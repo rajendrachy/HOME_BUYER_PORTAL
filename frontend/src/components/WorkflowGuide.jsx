@@ -118,6 +118,7 @@ const WorkflowGuide = ({ role, status, lastUpdate, count = 0, apps = [] }) => {
     if (role === 'municipality_officer') {
       if (status === 'pending') return { task: `Review ${count} New Application(s)`, color: 'text-rose-500', icon: AlertTriangle, isWorking: true };
       if (status === 'under_review') return { task: `Finalize ${count} Audit Report(s)`, color: 'text-rose-500', icon: FileText, isWorking: true };
+      if (status === 'approved') return { task: `Waiting for Bank Tenders (${count})`, color: 'text-slate-400', icon: Coffee, isWaiting: true };
       if (status === 'bank_selected') return { task: `Finalize ${count} Grant Disbursement(s)`, color: 'text-rose-500', icon: AlertTriangle, isWorking: true };
       if (status === 'completed') return { task: 'Grant Disbursed', color: 'text-emerald-500', icon: CheckCircle2, isWaiting: true };
     }

@@ -12,21 +12,34 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import NotificationPanel from '../../components/NotificationPanel';
 import WorkflowGuide from '../../components/WorkflowGuide';
+import AdvancedSearch from '../../components/AdvancedSearch';
 
 const Dashboard = () => {
   const [applications, setApplications] = useState([]);
+  const [districts, setDistricts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [filters, setFilters] = useState({ 
+    status: 'all', 
+    district: 'all',
+    search: '', 
+    sortBy: 'newest', 
+    page: 1, 
+    limit: 100 
+  });
 
   useEffect(() => {
     loadApplications();
-  }, []);
+  }, [filters]);
 
   const loadApplications = async () => {
     try {
-      const { data } = await getMyApplications();
+      const { data } = await getMyApplications(filters);
       setApplications(data.applications || []);
+      if (data.filters?.districts) {
+        setDistricts(data.filters.districts);
+      }
     } catch (err) {
       console.error('Failed to load applications');
     } finally {
@@ -175,6 +188,13 @@ const Dashboard = () => {
               <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px] -mr-32 -mt-32" />
            </div>
         </div>
+
+        {/* Advanced Search Interface */}
+        <AdvancedSearch 
+          filters={filters} 
+          onFilterChange={setFilters} 
+          districts={districts}
+        />
 
         <div className="grid lg:grid-cols-12 gap-12">
           {/* Main Application Stream */}

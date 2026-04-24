@@ -11,12 +11,22 @@ import {
 } from 'lucide-react';
 import NotificationPanel from '../../components/NotificationPanel';
 import WorkflowGuide from '../../components/WorkflowGuide';
+import AdvancedSearch from '../../components/AdvancedSearch';
 
 const BankDashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
+  const [districts, setDistricts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({ 
+    status: 'approved', 
+    district: 'all',
+    search: '', 
+    sortBy: 'newest', 
+    page: 1, 
+    limit: 100 
+  });
 
   const [myOffers, setMyOffers] = useState([]);
 
@@ -25,13 +35,16 @@ const BankDashboard = () => {
       fetchApplications();
       fetchMyOffers();
     }
-  }, [authLoading, user]);
+  }, [authLoading, user, filters]);
 
   const fetchApplications = async () => {
     try {
-      const response = await getApprovedApplications();
+      const response = await getApprovedApplications(filters);
       const appData = response?.data?.applications || [];
       setApplications(appData);
+      if (response?.data?.filters?.districts) {
+        setDistricts(response.data.filters.districts);
+      }
     } catch (err) {
       console.error('Lead sync failed', err);
       toast.error('Registry Sync Failed: Access to approved leads restricted.');
@@ -149,6 +162,18 @@ const BankDashboard = () => {
           ))}
         </div>
 
+        {/* Advanced Search Interface */}
+        <AdvancedSearch 
+          filters={filters} 
+          onFilterChange={setFilters} 
+          districts={districts}
+          statuses={[
+            { id: 'approved', label: 'Authorized leads' },
+            { id: 'bank_selected', label: 'My Integrations' },
+            { id: 'completed', label: 'Closed Leads' }
+          ]}
+        />
+
         <div className="grid lg:grid-cols-12 gap-12">
           {/* Approved Leads Stream */}
           <div className="lg:col-span-8 space-y-12">
@@ -156,9 +181,6 @@ const BankDashboard = () => {
               <h2 className="text-2xl font-black text-slate-900 uppercase tracking-widest flex items-center gap-4">
                 Verified Leads <span className="bg-slate-900 text-white px-4 py-1.5 rounded-full text-[10px]">{applications.length} Available</span>
               </h2>
-              <div className="flex gap-2">
-                <button className="p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-all"><Search size={16} /></button>
-              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-8">

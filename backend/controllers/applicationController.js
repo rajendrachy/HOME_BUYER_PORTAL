@@ -99,13 +99,38 @@ const submitApplication = async (req, res) => {
 // @route   GET /api/applications/my
 const getMyApplications = async (req, res) => {
   try {
-    const applications = await Application.find({ userId: req.user._id })
-      .sort({ createdAt: -1 });
+    let query = { userId: req.user._id };
+
+    // ✅ FILTER BY STATUS
+    if (req.query.status && req.query.status !== 'all') {
+      query.status = req.query.status;
+    }
+
+    // ✅ FILTER BY DISTRICT
+    if (req.query.district && req.query.district !== 'all') {
+      query['property.district'] = req.query.district;
+    }
+
+    // ✅ SEARCH BY APPLICATION ID OR APPLICANT NAME/EMAIL
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search, 'i');
+      query.$or = [
+        { applicationId: searchRegex },
+        { 'property.type': searchRegex },
+        { 'property.district': searchRegex }
+      ];
+    }
+
+    const applications = await Application.find(query).sort({ createdAt: -1 });
+    const districts = await Application.distinct('property.district', { userId: req.user._id });
     
     res.json({
       success: true,
       count: applications.length,
-      applications
+      applications,
+      filters: {
+        districts: districts.filter(d => d)
+      }
     });
   } catch (error) {
     console.error(error);
@@ -317,6 +342,21 @@ const updateStatus = async (req, res) => {
     if (!application) {
       return res.status(404).json({ message: 'Application not found' });
     }
+
+    // 🛡️ ENFORCE WORKFLOW RULES (Server-side Integrity)
+    if (status === 'completed' && application.status !== 'bank_selected') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Dossier Finalization Error: Grant disbursement requires a committed bank integration (bank_selected).' 
+      });
+    }
+
+    if (status === 'approved' && !['pending', 'under_review', 'approved'].includes(application.status)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Dossier Lifecycle Error: Authorization is only possible during the initial verification phase.' 
+      });
+    }
     
     // Update fields
     application.status = status || application.status;
@@ -520,22 +560,36 @@ const getMyBankOffers = async (req, res) => {
 // @access  Private (Bank Officer)
 const getApprovedApplications = async (req, res) => {
   try {
-    // Logic: 
-    // 1. Must be 'approved' status.
-    // 2. To fulfill "when one bank offer then in another bank the user submited form disapper":
-    //    Show only if bankOffers is empty OR if this specific bank has already made an offer (so they can see their offer).
-    //    Wait, if they already made an offer, it should be in "My Offers". 
-    //    So "Approved" list should only show applications with ZERO offers.
-    
-    const applications = await Application.find({ 
-      status: 'approved',
+    let query = { 
+      status: req.query.status && req.query.status !== 'all' ? req.query.status : 'approved',
       bankOffers: { $size: 0 }
-    }).populate('userId', 'name email phone');
+    };
+
+    // ✅ FILTER BY DISTRICT
+    if (req.query.district && req.query.district !== 'all') {
+      query['property.district'] = req.query.district;
+    }
+
+    // ✅ SEARCH BY APPLICATION ID OR APPLICANT NAME/EMAIL
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search, 'i');
+      query.$or = [
+        { applicationId: searchRegex },
+        { 'personalInfo.fullName': searchRegex },
+        { 'personalInfo.email': searchRegex }
+      ];
+    }
+
+    const applications = await Application.find(query).populate('userId', 'name email phone');
+    const districts = await Application.distinct('property.district', { status: 'approved' });
     
     res.json({
       success: true,
       count: applications.length,
-      applications
+      applications,
+      filters: {
+        districts: districts.filter(d => d)
+      }
     });
   } catch (error) {
     console.error(error);

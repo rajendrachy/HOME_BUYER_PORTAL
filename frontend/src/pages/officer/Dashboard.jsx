@@ -12,14 +12,17 @@ import {
 } from 'lucide-react';
 import NotificationPanel from '../../components/NotificationPanel';
 import WorkflowGuide from '../../components/WorkflowGuide';
+import AdvancedSearch from '../../components/AdvancedSearch';
 
 const OfficerDashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
+  const [districts, setDistricts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ 
     status: 'all', 
+    district: 'all',
     search: '', 
     sortBy: 'newest', 
     page: 1, 
@@ -36,6 +39,9 @@ const OfficerDashboard = () => {
     try {
       const response = await getAllApplicationsWithFilters(filters);
       setApplications(response?.data?.applications || []);
+      if (response?.data?.filters?.districts) {
+        setDistricts(response.data.filters.districts);
+      }
     } catch (err) {
       console.error('Registry access error', err);
       toast.error('Registry Access Error: Synchronization failed.');
@@ -54,7 +60,7 @@ const OfficerDashboard = () => {
     return s;
   }, [applications]);
 
-  if (loading) {
+  if (loading && applications.length === 0) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-6">
@@ -141,22 +147,16 @@ const OfficerDashboard = () => {
            ))}
         </div>
 
+        {/* Advanced Search Interface */}
+        <AdvancedSearch 
+          filters={filters} 
+          onFilterChange={setFilters} 
+          districts={districts}
+        />
+
         <div className="grid lg:grid-cols-12 gap-12">
           {/* Main Queue */}
           <div className="lg:col-span-8 space-y-8">
-             <div className="flex bg-white border border-slate-100 p-2 rounded-[2rem] shadow-sm mb-8 overflow-x-auto no-scrollbar">
-                {['all', 'pending', 'under_review', 'approved', 'bank_selected', 'completed'].map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setFilters({ ...filters, status: s })}
-                    className={`px-8 py-4 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest transition-all ${
-                      filters.status === s ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-900'
-                    }`}
-                  >
-                    {s.replace('_', ' ')}
-                  </button>
-                ))}
-             </div>
 
              <div className="bg-white border border-slate-100 rounded-[3.5rem] shadow-sm overflow-hidden">
                 <table className="w-full text-left">

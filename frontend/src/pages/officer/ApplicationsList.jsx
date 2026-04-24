@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getAllApplicationsWithFilters } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import FilterBar from '../../components/FilterBar';
+import AdvancedSearch from '../../components/AdvancedSearch';
 
 const ApplicationsList = () => {
   const { user, loading: authLoading } = useAuth();
@@ -135,8 +135,8 @@ const ApplicationsList = () => {
           </div>
         )}
 
-        {/* Filter Bar */}
-        <FilterBar 
+        {/* Advanced Search Interface */}
+        <AdvancedSearch 
           filters={filters} 
           onFilterChange={handleFilterChange}
           districts={districts}

@@ -287,13 +287,25 @@ const ApplicationReview = () => {
                  <form onSubmit={handleSubmit} className="space-y-8">
                     <div>
                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-4">Verification Status</label>
+                       
+                       {/* Workflow Guidance */}
+                       <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Workflow Stage</p>
+                          <p className="text-xs font-black text-slate-900">
+                             {application.status === 'pending' || application.status === 'under_review' ? 'Awaiting Officer Authorization' :
+                              application.status === 'approved' ? 'Awaiting Bank/Citizen Coordination' :
+                              application.status === 'bank_selected' ? 'Citizen Accepted Offer: Ready for Finalization' :
+                              application.status === 'completed' ? 'Registry Finalized' : 'Process Terminated'}
+                          </p>
+                       </div>
+
                        <div className="grid grid-cols-1 gap-3">
                           {[
-                            { id: 'under_review', l: 'Under Review', c: 'text-blue-600', bg: 'bg-blue-50', i: Info },
-                            { id: 'approved', l: 'Authorize Approval', c: 'text-emerald-600', bg: 'bg-emerald-50', i: CheckCircle2 },
-                            { id: 'rejected', l: 'Reject Application', c: 'text-rose-600', bg: 'bg-rose-50', i: XCircle },
-                            { id: 'completed', l: 'Finalize / Disburse Grant', c: 'text-indigo-600', bg: 'bg-indigo-50', i: ClipboardCheck }
-                          ].map((opt) => (
+                            { id: 'under_review', l: 'Under Review', c: 'text-blue-600', bg: 'bg-blue-50', i: Info, show: ['pending', 'under_review'].includes(application.status) },
+                            { id: 'approved', l: 'Authorize Approval', c: 'text-emerald-600', bg: 'bg-emerald-50', i: CheckCircle2, show: ['pending', 'under_review'].includes(application.status) },
+                            { id: 'rejected', l: 'Reject Application', c: 'text-rose-600', bg: 'bg-rose-50', i: XCircle, show: ['pending', 'under_review', 'bank_selected', 'approved'].includes(application.status) },
+                            { id: 'completed', l: 'Finalize / Disburse Grant', c: 'text-indigo-600', bg: 'bg-indigo-50', i: ClipboardCheck, show: application.status === 'bank_selected' }
+                          ].filter(opt => opt.show).map((opt) => (
                              <button
                                 key={opt.id}
                                 type="button"
@@ -308,6 +320,15 @@ const ApplicationReview = () => {
                                 <span className="text-[10px] font-black uppercase tracking-widest">{opt.l}</span>
                              </button>
                           ))}
+                          
+                          {application.status === 'approved' && (
+                             <div className="mt-4 p-6 bg-amber-50 rounded-2xl border border-amber-100 flex gap-4">
+                                <Info size={20} className="text-amber-600 flex-shrink-0" />
+                                <p className="text-[10px] font-bold text-amber-900 uppercase leading-relaxed tracking-widest">
+                                   Application authorized. Awaiting bank offer and citizen selection before final disbursement can be committed.
+                                </p>
+                             </div>
+                          )}
                        </div>
                     </div>
 
@@ -332,9 +353,25 @@ const ApplicationReview = () => {
                           }`}
                           placeholder="0.00"
                        />
-                       <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-2 ml-1">
-                          Threshold: NPR {Math.floor(maxSubsidy).toLocaleString()}
-                       </p>
+                       <div className="mt-4 flex flex-col gap-2 ml-1">
+                          <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+                             Statutory Threshold: NPR {Math.floor(maxSubsidy).toLocaleString()} (15% of Property Cost)
+                          </p>
+                          {!isCompliant && (
+                             <motion.div 
+                                initial={{ opacity: 0, y: -10 }} 
+                                animate={{ opacity: 1, y: 0 }}
+                                className="flex gap-3 p-4 bg-rose-50 rounded-2xl border border-rose-100"
+                             >
+                                <AlertTriangle size={16} className="text-rose-600 flex-shrink-0" />
+                                <p className="text-[10px] font-bold text-rose-900 uppercase leading-relaxed tracking-widest">
+                                   Allocation Violation: The proposed amount (NPR {parseInt(formData.subsidyApproved || 0).toLocaleString()}) exceeds the statutory limit by NPR {(parseInt(formData.subsidyApproved || 0) - Math.floor(maxSubsidy)).toLocaleString()}. 
+                                   <br/>
+                                   <span className="text-[9px] opacity-70">Calculation: Proposed &gt; Approved Ceiling (NPR {Math.floor(maxSubsidy).toLocaleString()})</span>
+                                </p>
+                             </motion.div>
+                          )}
+                       </div>
                     </div>
 
                     <AnimatePresence>
