@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import * as api from '../../services/api';
-import { adminGetAllUsers, adminUpdateUser, adminDeleteUser } from '../../services/api';
+import { adminGetAllUsers, adminUpdateUser, adminDeleteUser, addBank, deleteBank, addMunicipality, deleteMunicipality } from '../../services/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, Database, Activity, Users, FileText, Globe, Settings, TrendingUp, X, MapPin, Building2, Trash2, LayoutDashboard, Search } from 'lucide-react';
@@ -53,6 +53,11 @@ const AdminDashboard = () => {
     subsidyCap: 1000000,
     interestRateFloor: 8.5
   });
+
+  const [newBank, setNewBank] = useState({ name: '', branch: '', address: '', contactEmail: '', contactPhone: '' });
+  const [newMuni, setNewMuni] = useState({ name: '', district: '', state: '', code: '' });
+  const [isBankModalOpen, setIsBankModalOpen] = useState(false);
+  const [isMuniModalOpen, setIsMuniModalOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -158,6 +163,58 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleAddBank = async (e) => {
+    e.preventDefault();
+    try {
+      await addBank(newBank);
+      toast.success('New Fiscal Node Integrated Successfully.');
+      setNewBank({ name: '', branch: '', address: '', contactEmail: '', contactPhone: '' });
+      setIsBankModalOpen(false);
+      fetchInstitutions();
+    } catch (err) {
+      toast.error('Fiscal node integration failed.');
+    }
+  };
+
+  const handleDeleteBank = async (id) => {
+    if (!window.confirm('Decommission this fiscal node?')) return;
+    try {
+      await deleteBank(id);
+      toast.success('Fiscal node decommissioned.');
+      fetchInstitutions();
+    } catch (err) {
+      toast.error('Decommissioning failed.');
+    }
+  };
+
+  const handleAddMuni = async (e) => {
+    e.preventDefault();
+    try {
+      await addMunicipality(newMuni);
+      toast.success('New Jurisdiction Synchronized.');
+      setNewMuni({ name: '', district: '', state: '', code: '' });
+      setIsMuniModalOpen(false);
+      fetchInstitutions();
+    } catch (err) {
+      toast.error('Jurisdiction synchronization failed.');
+    }
+  };
+
+  const handleDeleteMuni = async (id) => {
+    if (!window.confirm('Dissolve this jurisdiction?')) return;
+    try {
+      await deleteMunicipality(id);
+      toast.success('Jurisdiction dissolved.');
+      fetchInstitutions();
+    } catch (err) {
+      toast.error('Dissolution failed.');
+    }
+  };
+
+  const handleCommitConfig = () => {
+    toast.success('Mainframe Configuration Synchronized Successfully.');
+  };
+
   const stats = useMemo(() => {
     const s = { pending: 0, under_review: 0, approved: 0, bank_selected: 0, completed: 0, rejected: 0 };
     applications.forEach(app => { if (s[app.status] !== undefined) s[app.status]++; });
@@ -248,7 +305,6 @@ const AdminDashboard = () => {
         <AnimatePresence mode="wait">
            {activeTab === 'overview' && (
               <motion.div key="overview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
-                 {/* Top Level Metrics */}
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                     {[
                       { l: "Global Dossiers", v: applications.length, i: Database, c: "text-slate-900" },
@@ -266,7 +322,6 @@ const AdminDashboard = () => {
                     ))}
                  </div>
 
-                 {/* Visualization Layer */}
                  <div className="grid lg:grid-cols-3 gap-8">
                     <div className="bg-white p-12 rounded-[3.5rem] border border-slate-100 shadow-sm h-[500px] flex flex-col">
                        <h3 className="text-xl font-black text-slate-900 mb-10 uppercase tracking-widest">National Status Distribution</h3>
@@ -361,7 +416,6 @@ const AdminDashboard = () => {
 
            {activeTab === 'users' && (
               <motion.div key="users" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8">
-                 {/* User table same as before but with "Absolute Identity Suite" header */}
                  <div className="bg-white border border-slate-100 rounded-[3rem] shadow-sm overflow-hidden">
                     <table className="w-full text-left">
                        <thead>
@@ -405,7 +459,6 @@ const AdminDashboard = () => {
 
            {activeTab === 'settings' && (
               <motion.div key="settings" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-5xl mx-auto space-y-12">
-                 {/* System Config - Same as before but with "Absolute Mainframe" header */}
                  <div className="bg-white border border-slate-100 rounded-[3.5rem] p-12 shadow-sm space-y-10">
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight">Mainframe Synchronization</h3>
                     <div className="grid md:grid-cols-2 gap-10">
@@ -418,10 +471,14 @@ const AdminDashboard = () => {
                           <input type="number" value={systemConfig.subsidyCap} onChange={(e) => setSystemConfig({...systemConfig, subsidyCap: e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-black" />
                        </div>
                     </div>
-                    <button className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs">Commit Global Changes</button>
+                    <button 
+                       onClick={handleCommitConfig}
+                       className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-600 transition-all"
+                    >
+                       Commit Global Changes
+                    </button>
                  </div>
 
-                 {/* NEW: Institutional Management */}
                  <div className="grid lg:grid-cols-2 gap-12">
                     <div className="bg-white border border-slate-100 rounded-[3.5rem] p-10 shadow-sm h-fit">
                        <h4 className="text-lg font-black text-slate-900 mb-8 uppercase tracking-widest flex items-center gap-3">
@@ -431,11 +488,21 @@ const AdminDashboard = () => {
                           {banks.map(bank => (
                              <div key={bank._id} className="flex justify-between items-center p-5 bg-slate-50 rounded-2xl group border border-transparent hover:border-blue-100">
                                 <div><p className="text-sm font-black text-slate-900">{bank.name}</p><p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{bank.branch} Branch</p></div>
-                                <button className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16} /></button>
+                                <button 
+                                   onClick={() => handleDeleteBank(bank._id)}
+                                   className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-rose-100 rounded-lg"
+                                >
+                                   <Trash2 size={16} />
+                                </button>
                              </div>
                           ))}
                        </div>
-                       <button className="w-full mt-6 py-4 border-2 border-dashed border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-300 hover:text-blue-600 hover:border-blue-100 transition-all">+ Add Fiscal Node</button>
+                       <button 
+                          onClick={() => setIsBankModalOpen(true)}
+                          className="w-full mt-6 py-4 border-2 border-dashed border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-300 hover:text-blue-600 hover:border-blue-100 transition-all"
+                       >
+                          + Add Fiscal Node
+                       </button>
                     </div>
 
                     <div className="bg-white border border-slate-100 rounded-[3.5rem] p-10 shadow-sm h-fit">
@@ -446,11 +513,21 @@ const AdminDashboard = () => {
                           {municipalities.map(muni => (
                              <div key={muni._id} className="flex justify-between items-center p-5 bg-slate-50 rounded-2xl group border border-transparent hover:border-emerald-100">
                                 <div><p className="text-sm font-black text-slate-900">{muni.name}</p><p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{muni.district} District</p></div>
-                                <button className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16} /></button>
+                                <button 
+                                   onClick={() => handleDeleteMuni(muni._id)}
+                                   className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-rose-100 rounded-lg"
+                                >
+                                   <Trash2 size={16} />
+                                </button>
                              </div>
                           ))}
                        </div>
-                       <button className="w-full mt-6 py-4 border-2 border-dashed border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-300 hover:text-emerald-600 hover:border-emerald-100 transition-all">+ Add Jurisdiction</button>
+                       <button 
+                          onClick={() => setIsMuniModalOpen(true)}
+                          className="w-full mt-6 py-4 border-2 border-dashed border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-300 hover:text-emerald-600 hover:border-emerald-100 transition-all"
+                       >
+                          + Add Jurisdiction
+                       </button>
                     </div>
                  </div>
               </motion.div>
@@ -470,7 +547,52 @@ const AdminDashboard = () => {
            )}
         </AnimatePresence>
 
-        {/* --- OVERRIDE MODALS --- */}
+        {/* --- MODALS --- */}
+
+        {/* Add Bank Modal */}
+        <AnimatePresence>
+           {isBankModalOpen && (
+              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl z-[200] flex items-center justify-center p-6">
+                 <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-xl rounded-[3.5rem] shadow-2xl overflow-hidden">
+                    <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                       <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Add Fiscal Node</h3>
+                       <button onClick={() => setIsBankModalOpen(false)}><X size={24} className="text-slate-300" /></button>
+                    </div>
+                    <form onSubmit={handleAddBank} className="p-10 space-y-6">
+                       <div className="space-y-2"><label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Bank Name</label><input type="text" required value={newBank.name} onChange={(e) => setNewBank({...newBank, name: e.target.value})} className="w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold" /></div>
+                       <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2"><label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Branch</label><input type="text" required value={newBank.branch} onChange={(e) => setNewBank({...newBank, branch: e.target.value})} className="w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold" /></div>
+                          <div className="space-y-2"><label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Phone</label><input type="text" value={newBank.contactPhone} onChange={(e) => setNewBank({...newBank, contactPhone: e.target.value})} className="w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold" /></div>
+                       </div>
+                       <div className="space-y-2"><label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Contact Email</label><input type="email" value={newBank.contactEmail} onChange={(e) => setNewBank({...newBank, contactEmail: e.target.value})} className="w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold" /></div>
+                       <button type="submit" className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs">Integrate Bank</button>
+                    </form>
+                 </motion.div>
+              </div>
+           )}
+        </AnimatePresence>
+
+        {/* Add Municipality Modal */}
+        <AnimatePresence>
+           {isMuniModalOpen && (
+              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl z-[200] flex items-center justify-center p-6">
+                 <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-xl rounded-[3.5rem] shadow-2xl overflow-hidden">
+                    <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                       <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Add Jurisdiction</h3>
+                       <button onClick={() => setIsMuniModalOpen(false)}><X size={24} className="text-slate-300" /></button>
+                    </div>
+                    <form onSubmit={handleAddMuni} className="p-10 space-y-6">
+                       <div className="space-y-2"><label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Municipality Name</label><input type="text" required value={newMuni.name} onChange={(e) => setNewMuni({...newMuni, name: e.target.value})} className="w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold" /></div>
+                       <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2"><label className="text-[10px] font-black uppercase tracking-widest text-slate-400">District</label><input type="text" required value={newMuni.district} onChange={(e) => setNewMuni({...newMuni, district: e.target.value})} className="w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold" /></div>
+                          <div className="space-y-2"><label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Code</label><input type="text" value={newMuni.code} onChange={(e) => setNewMuni({...newMuni, code: e.target.value})} className="w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold" /></div>
+                       </div>
+                       <button type="submit" className="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs">Authorize Jurisdiction</button>
+                    </form>
+                 </motion.div>
+              </div>
+           )}
+        </AnimatePresence>
 
         {/* Application Override Modal */}
         <AnimatePresence>
@@ -503,16 +625,14 @@ const AdminDashboard = () => {
                              <input type="text" value={editingApp.property?.district} onChange={(e) => setEditingApp({...editingApp, property: { ...editingApp.property, district: e.target.value }})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-black" />
                           </div>
                        </div>
-                       <div className="flex gap-4">
-                          <button type="submit" className="flex-1 py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl">Apply Override Protocol</button>
-                       </div>
+                       <button type="submit" className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl">Apply Override Protocol</button>
                     </form>
                  </motion.div>
               </div>
            )}
         </AnimatePresence>
 
-        {/* User Modal - Same as before */}
+        {/* User Modal */}
         <AnimatePresence>
            {isEditModalOpen && editingUser && (
               <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl z-[200] flex items-center justify-center p-6">

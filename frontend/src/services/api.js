@@ -98,7 +98,12 @@ export const getMyBankOffers = () => api.get('/applications/bank/offers');
 
 // ============= INSTITUTIONAL APIs =============
 export const getAllBanks = () => api.get('/banks');
+export const addBank = (data) => api.post('/banks', data);
+export const deleteBank = (id) => api.delete(`/banks/${id}`);
+
 export const getAllMunicipalities = () => api.get('/municipalities');
+export const addMunicipality = (data) => api.post('/municipalities', data);
+export const deleteMunicipality = (id) => api.delete(`/municipalities/${id}`);
 
 export default api;
 

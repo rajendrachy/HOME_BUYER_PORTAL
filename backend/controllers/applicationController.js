@@ -511,9 +511,16 @@ const getMyBankOffers = async (req, res) => {
 // @access  Private (Bank Officer)
 const getApprovedApplications = async (req, res) => {
   try {
-    // ✅ Include both APPROVED and BANK_SELECTED applications
+    // Logic: 
+    // 1. Must be 'approved' status.
+    // 2. To fulfill "when one bank offer then in another bank the user submited form disapper":
+    //    Show only if bankOffers is empty OR if this specific bank has already made an offer (so they can see their offer).
+    //    Wait, if they already made an offer, it should be in "My Offers". 
+    //    So "Approved" list should only show applications with ZERO offers.
+    
     const applications = await Application.find({ 
-      status: { $in: ['approved', 'bank_selected'] }
+      status: 'approved',
+      bankOffers: { $size: 0 }
     }).populate('userId', 'name email phone');
     
     res.json({

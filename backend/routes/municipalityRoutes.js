@@ -1,17 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const Municipality = require('../models/Municipality');
+const { getMunicipalities, addMunicipality, updateMunicipality, deleteMunicipality } = require('../controllers/municipalityController');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
-// @desc    Get all active municipalities
-// @route   GET /api/municipalities
-// @access  Public
-router.get('/', async (req, res) => {
-  try {
-    const municipalities = await Municipality.find().select('name district _id');
-    res.json({ success: true, municipalities });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-});
+router.route('/')
+  .get(getMunicipalities)
+  .post(protect, authorize('admin'), addMunicipality);
+
+router.route('/:id')
+  .put(protect, authorize('admin'), updateMunicipality)
+  .delete(protect, authorize('admin'), deleteMunicipality);
 
 module.exports = router;

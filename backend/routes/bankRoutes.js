@@ -1,17 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const Bank = require('../models/Bank');
+const { getBanks, addBank, updateBank, deleteBank } = require('../controllers/bankController');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
-// @desc    Get all active banks
-// @route   GET /api/banks
-// @access  Public
-router.get('/', async (req, res) => {
-  try {
-    const banks = await Bank.find({ isActive: true }).select('name branch _id');
-    res.json({ success: true, banks });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-});
+router.route('/')
+  .get(getBanks)
+  .post(protect, authorize('admin'), addBank);
+
+router.route('/:id')
+  .put(protect, authorize('admin'), updateBank)
+  .delete(protect, authorize('admin'), deleteBank);
 
 module.exports = router;
